@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "regulatory-rag-system"
+version = "0.1.0"
+description = "RAG system for regulatory standard documents with FAISS and LangChain"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "Chamiln17", email = "your.email@example.com"},
+]
+dependencies = [
+    "faiss-cpu>=1.7.4",
+    "langchain>=0.1.0",
+    "langchain-community>=0.0.20",
+    "sentence-transformers>=2.2.2",
+    "pdfplumber>=0.9.0",
+    "pypdf2>=3.0.1",
+    "numpy>=1.24.0",
+    "openai>=1.12.0",
+    "cohere>=4.47",
+    "tiktoken>=0.5.2",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "tqdm>=4.66.0",
+    "pyyaml>=6.0.1",
+    "docx>=0.2.4",
+    "pinecone-client>=6.0.0",
+    "llama-index>=0.12.42",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "faiss-gpu>=1.7.2",
+]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+# This is the key fix - tell hatchling where our package is
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/config.yaml",
+    "/README.md",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true

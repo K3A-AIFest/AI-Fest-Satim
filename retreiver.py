@@ -4,20 +4,26 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
 
 
-storage_path = "./llamaindex_store"  # Path to your storage directory
+policies_path = "./db/llamaindex_store_policies"
+standards_path="./db/llamaindex_store_standards"# Path to your storage directory
 
-storage_context = StorageContext.from_defaults(persist_dir=storage_path)
+policies_context = StorageContext.from_defaults(persist_dir=policies_path)
+standards_context = StorageContext.from_defaults(persist_dir=standards_path)
 
-# Load the index from storage
 
 
 embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-large-en-v1.5"
-)  # Adjust device as needed
+    model_name="BAAI/bge-m3"
+)  
 
-index = load_index_from_storage(storage_context, embed_model=embed_model)
+polices_index = load_index_from_storage(policies_context, embed_model=embed_model)
+standards_index = load_index_from_storage(standards_context, embed_model=embed_model)
 
-retriever = VectorIndexRetriever(
-    index=index,
+polices_retreiver = VectorIndexRetriever(
+    index=polices_index,
+    similarity_top_k=20,  # Number of most relevant chunks to retrieve
+)
+standards_retreiver = VectorIndexRetriever(
+    index=standards_index,
     similarity_top_k=20,  # Number of most relevant chunks to retrieve
 )

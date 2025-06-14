@@ -1,161 +1,116 @@
 """
-FastAPI server for policy evaluation endpoints.
+FastAPI server for GRC Assistant API endpoints.
 
 This module provides the API endpoints for:
-1. Gap identification - identify missing elements in policies
-2. Compliance checking - evaluate compliance of policies against standards
-3. Policy enhancement - suggest improvements for policies
+1. Policy evaluation (gap identification, compliance checking, enhancement)
+2. Use case processing (KPI analysis, deployment analysis, judgment)
+3. File upload support for DOCX and PDF documents
 """
 import os
-import json
-from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, Body
-from pydantic import BaseModel, Field
-from pipelines.policy_evaluation import identify_gaps, check_compliance, enhance_policy, fast_policy_evaluation
-from pipelines.use_case_processor import analyze_use_case_kpis, analyze_deployment, judge_use_case, process_use_case
+from typing import List, Optional
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+
+# Import handlers and models
+from handlers.models import (
+    PolicyEvaluationRequest,
+    PolicyEvaluationRequestWithSpeed,
+    UseCaseRequest,
+    GapAnalysisResponse,
+    ComplianceCheckResponse,
+    PolicyEnhancementResponse,
+    CombinedEvaluationResponse,
+    FastAnalysisResponse,
+    KPIAnalysisResponse,
+    DeploymentAnalysisResponse,
+    UseCaseJudgmentResponse,
+    CompleteUseCaseProcessingResponse,
+
+)
+from handlers.policy_handlers import (
+    handle_gap_identification,
+    handle_gap_identification_file,
+    handle_compliance_checking,
+    handle_compliance_checking_file,
+    handle_policy_enhancement,
+    handle_policy_enhancement_file,
+    handle_evaluate_policy,
+    handle_evaluate_policy_file,
+    handle_fast_analyze_policy,
+    handle_fast_analyze_policy_file
+)
+from handlers.use_case_handlers import (
+    handle_analyze_use_case_kpis,
+    handle_analyze_use_case_kpis_file,
+    handle_analyze_deployment,
+    handle_analyze_deployment_file,
+    handle_judge_use_case,
+    handle_judge_use_case_file,
+    handle_process_use_case,
+    handle_process_use_case_file
+)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Policy Evaluation API",
-    description="API for evaluating security policies against standards",
-    version="1.0.0",
+    title="GRC Assistant API",
+    description="API for evaluating security policies and use cases against standards",
+    version="2.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# Define request and response models
-class PolicyEvaluationRequest(BaseModel):
-    """Request model for policy evaluation endpoints."""
-    policy: str = Field(..., description="The policy document text to evaluate")
-    standards: List[str] = Field(..., description="List of standard documents to evaluate against")
-    
-class FastPolicyEvaluationRequest(PolicyEvaluationRequest):
-    """Request model for fast policy evaluation endpoint."""
-    pass
-
-class PolicyEvaluationRequestWithSpeed(PolicyEvaluationRequest):
-    """Request model for policy evaluation with speed option."""
-    speed: Optional[str] = Field("deep", description="Analysis speed: 'deep' (thorough analysis) or 'fast' (quick analysis)")
-
-class GapAnalysisResponse(BaseModel):
-    """Response model for gap identification."""
-    results: List[Dict[str, Any]] = Field(..., description="List of identified gaps with classification and justification")
-    
-class ComplianceCheckResponse(BaseModel):
-    """Response model for compliance checking."""
-    results: List[Dict[str, Any]] = Field(..., description="List of compliance assessments with classification and justification")
-    
-class PolicyEnhancementResponse(BaseModel):
-    """Response model for policy enhancement."""
-    results: List[Dict[str, Any]] = Field(..., description="List of enhanced policy chunks with justification")
-
-class CombinedEvaluationResponse(BaseModel):
-    """Response model for combined policy evaluation."""
-    results: List[Dict[str, Any]] = Field(..., description="List of consolidated evaluation results for each policy chunk")
-    speed: str = Field("deep", description="Speed mode used for the analysis")
-
-class FastAnalysisResponse(BaseModel):
-    """Response model for fast policy analysis."""
-    results: List[Dict[str, Any]] = Field(..., description="List of quick gap analysis results with classification")
-    speed: str = Field("fast", description="Speed mode used for the analysis")
-
-# Use case processor models
-class UseCaseRequest(BaseModel):
-    """Request model for use case processor endpoints."""
-    use_case: str = Field(..., description="The security use case text to analyze")
-    standards: List[str] = Field(..., description="List of standard documents to evaluate against")
-    policies: Optional[List[str]] = Field(None, description="Optional list of policy documents to evaluate against")
-
-class KPIAnalysisResponse(BaseModel):
-    """Response model for KPI analysis."""
-    kpi_scores: Dict[str, float] = Field(..., description="Dictionary of KPI names and their scores")
-    analysis: Dict[str, str] = Field(..., description="Dictionary of KPI names and their analysis explanation")
-    overall_score: float = Field(..., description="Overall security KPI score between 0 and 100")
-    recommendations: List[str] = Field(..., description="List of recommendations to improve KPI scores")
-
-class DeploymentAnalysisResponse(BaseModel):
-    """Response model for deployment analysis."""
-    feasibility_score: float = Field(..., description="Feasibility score between 0-100")
-    pros: List[str] = Field(..., description="List of advantages for deploying the use case")
-    cons: List[str] = Field(..., description="List of disadvantages for deploying the use case")
-    timeline_estimate: str = Field(..., description="Estimated timeline for deployment")
-    resource_requirements: List[str] = Field(..., description="List of resources required for deployment")
-    risk_factors: List[Dict[str, Any]] = Field(..., description="List of risk factors with severity and mitigation")
-
-class UseCaseJudgmentResponse(BaseModel):
-    """Response model for use case judgment."""
-    effectiveness_score: float = Field(..., description="Effectiveness score between 0-100")
-    alignment_with_standards: List[Dict[str, Any]] = Field(..., description="Analysis of alignment with standards")
-    alignment_with_policies: List[Dict[str, Any]] = Field(..., description="Analysis of alignment with policies")
-    security_impact: str = Field(..., description="Overall security impact assessment")
-    gaps_identified: List[str] = Field(..., description="List of identified gaps in the use case")
-    improvement_suggestions: List[str] = Field(..., description="List of suggestions to improve the use case")
-
-class AggregatedAnalysisResponse(BaseModel):
-    """Response model for aggregated analysis."""
-    overall_assessment: str = Field(..., description="Overall assessment summary")
-    overall_score: float = Field(..., description="Overall score between 0-100")
-    key_findings: List[str] = Field(..., description="List of key findings from all analyses")
-    critical_considerations: List[str] = Field(..., description="List of critical considerations")
-    recommended_next_steps: List[str] = Field(..., description="Recommended next steps")
-    stakeholder_considerations: Dict[str, List[str]] = Field(..., description="Considerations for stakeholders")
-
-class CompleteUseCaseProcessingResponse(BaseModel):
-    """Response model for complete use case processing."""
-    use_case_content: str = Field(..., description="The original use case text that was analyzed")
-    kpi_analysis: KPIAnalysisResponse = Field(..., description="Results of KPI analysis")
-    deployment_analysis: DeploymentAnalysisResponse = Field(..., description="Results of deployment analysis")
-    use_case_judgment: UseCaseJudgmentResponse = Field(..., description="Results of use case judgment")
-    aggregated_analysis: AggregatedAnalysisResponse = Field(..., description="Results of aggregated analysis")
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "2.0.0"}
 
-# Gap identification endpoint
-@app.post("/api/v1/identify-gaps", response_model=GapAnalysisResponse, tags=["Policy Evaluation"])
+
+# =============================================================================
+# POLICY EVALUATION ENDPOINTS
+# =============================================================================
+
+# Text-based endpoints
+@app.post("/policies/gaps", response_model=GapAnalysisResponse, tags=["Policy Evaluation"])
 async def gap_identification(request: PolicyEvaluationRequest):
     """
     Identify gaps in a policy compared to standards.
     
     This endpoint analyzes a policy document to identify missing elements when compared to standards.
     """
-    try:
-        results = identify_gaps(request.policy, request.standards)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in gap identification: {str(e)}")
+    return await handle_gap_identification(request)
 
-# Compliance checking endpoint
-@app.post("/api/v1/check-compliance", response_model=ComplianceCheckResponse, tags=["Policy Evaluation"])
+
+@app.post("/policies/compliance", response_model=ComplianceCheckResponse, tags=["Policy Evaluation"])
 async def compliance_checking(request: PolicyEvaluationRequest):
     """
     Check compliance of a policy against standards.
     
     This endpoint evaluates how well a policy complies with the requirements in standards.
     """
-    try:
-        results = check_compliance(request.policy, request.standards)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in compliance checking: {str(e)}")
+    return await handle_compliance_checking(request)
 
-# Policy enhancement endpoint
-@app.post("/api/v1/enhance-policy", response_model=PolicyEnhancementResponse, tags=["Policy Evaluation"])
+
+@app.post("/policies/enhance", response_model=PolicyEnhancementResponse, tags=["Policy Evaluation"])
 async def policy_enhancement(request: PolicyEvaluationRequest):
     """
     Enhance a policy based on standards.
     
     This endpoint suggests improvements for a policy to better align with standards.
     """
-    try:
-        results = enhance_policy(request.policy, request.standards)
-        return {"results": results}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in policy enhancement: {str(e)}")
+    return await handle_policy_enhancement(request)
 
-# Combined evaluation endpoint
-@app.post("/api/v1/evaluate-policy", response_model=CombinedEvaluationResponse, tags=["Policy Evaluation"])
+
+@app.post("/policies/evaluate", response_model=CombinedEvaluationResponse, tags=["Policy Evaluation"])
 async def evaluate_policy(request: PolicyEvaluationRequestWithSpeed):
     """
     Perform a comprehensive evaluation of a policy against standards.
@@ -167,71 +122,11 @@ async def evaluate_policy(request: PolicyEvaluationRequestWithSpeed):
     - 'deep' (default): Thorough analysis with gap identification, compliance checking, and policy enhancement
     - 'fast': Quick analysis focusing only on critical gaps, with larger chunks and sampling for faster results
     """
-    try:
-        # Check if fast mode is requested
-        speed = getattr(request, 'speed', 'deep')
-        
-        if speed == 'fast':
-            # For fast mode, only perform gap analysis
-            gap_results = fast_policy_evaluation(request.policy, request.standards)
-            compliance_results = []
-            enhancement_results = []
-        else:
-            # Regular deep analysis
-            gap_results = identify_gaps(request.policy, request.standards)
-            compliance_results = check_compliance(request.policy, request.standards)
-            enhancement_results = enhance_policy(request.policy, request.standards)
-        
-        # Create a merged view by chunk
-        merged_results = []
-        
-        # Use original_content as the unique identifier for each chunk
-        for gap_item in gap_results:
-            chunk_content = gap_item["original_content"]
-            
-            # Find matching compliance and enhancement items
-            compliance_item = next(
-                (item for item in compliance_results if item["original_content"] == chunk_content),
-                None
-            )
-            
-            enhancement_item = next(
-                (item for item in enhancement_results if item["original_content"] == chunk_content),
-                None
-            )
-            
-            # Create consolidated result for this chunk
-            consolidated_result = {
-                "chunk_content": chunk_content,
-                "gap_analysis": {
-                    "classification": gap_item.get("classification", "UNKNOWN"),
-                    "gaps": gap_item.get("gaps", []),
-                    "rationale": gap_item.get("rationale", ""),
-                    "references": gap_item.get("references", [])
-                },
-                "compliance_assessment": {
-                    "classification": compliance_item.get("classification", "UNKNOWN") if compliance_item else "UNKNOWN",
-                    "issues": compliance_item.get("issues", []) if compliance_item else [],
-                    "rationale": compliance_item.get("rationale", "") if compliance_item else "",
-                    "references": compliance_item.get("references", []) if compliance_item else []
-                },
-                "enhancement": {
-                    "classification": enhancement_item.get("classification", "UNKNOWN") if enhancement_item else "UNKNOWN",
-                    "enhanced_version": enhancement_item.get("enhanced_version", "") if enhancement_item else "",
-                    "changes": enhancement_item.get("changes", []) if enhancement_item else [],
-                    "rationale": enhancement_item.get("rationale", "") if enhancement_item else ""
-                }
-            }
-            
-            merged_results.append(consolidated_result)
-            
-        return {"results": merged_results, "speed": request.speed}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in policy evaluation: {str(e)}")
+    return await handle_evaluate_policy(request)
 
-# Fast policy analysis endpoint
-@app.post("/api/v1/fast-analyze", response_model=FastAnalysisResponse, tags=["Policy Evaluation"])
-async def fast_analyze_policy(request: FastPolicyEvaluationRequest):
+
+@app.post("/policies/analyze/fast", response_model=FastAnalysisResponse, tags=["Policy Evaluation"])
+async def fast_analyze_policy(request: PolicyEvaluationRequest):
     """
     Perform a quick analysis of a policy against standards.
     
@@ -242,15 +137,87 @@ async def fast_analyze_policy(request: FastPolicyEvaluationRequest):
     
     It's ideal for initial assessment or when time is limited.
     """
-    try:
-        results = fast_policy_evaluation(request.policy, request.standards)
-        return {"results": results, "speed": "fast"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in fast policy analysis: {str(e)}")
+    return await handle_fast_analyze_policy(request)
 
-# Use Case Processor Endpoints
 
-@app.post("/api/v1/use-case/analyze-kpis", response_model=KPIAnalysisResponse, tags=["Use Case Processor"])
+# File upload endpoints
+@app.post("/policies/gaps/upload", response_model=GapAnalysisResponse, tags=["Policy Evaluation", "File Upload"])
+async def gap_identification_upload(
+    file: UploadFile = File(..., description="Policy document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    chunk_size: Optional[int] = Form(default=1000, description="Size of text chunks for processing")
+):
+    """
+    Identify gaps in a policy document file compared to standards.
+    
+    Upload a policy document (DOCX or PDF) and get gap analysis results.
+    """
+    return await handle_gap_identification_file(file, standards, chunk_size)
+
+
+@app.post("/policies/compliance/upload", response_model=ComplianceCheckResponse, tags=["Policy Evaluation", "File Upload"])
+async def compliance_checking_upload(
+    file: UploadFile = File(..., description="Policy document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    chunk_size: Optional[int] = Form(default=1000, description="Size of text chunks for processing")
+):
+    """
+    Check compliance of a policy document file against standards.
+    
+    Upload a policy document (DOCX or PDF) and get compliance assessment results.
+    """
+    return await handle_compliance_checking_file(file, standards, chunk_size)
+
+
+@app.post("/policies/enhance/upload", response_model=PolicyEnhancementResponse, tags=["Policy Evaluation", "File Upload"])
+async def policy_enhancement_upload(
+    file: UploadFile = File(..., description="Policy document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    chunk_size: Optional[int] = Form(default=1000, description="Size of text chunks for processing")
+):
+    """
+    Enhance a policy document file based on standards.
+    
+    Upload a policy document (DOCX or PDF) and get enhancement suggestions.
+    """
+    return await handle_policy_enhancement_file(file, standards, chunk_size)
+
+
+@app.post("/policies/evaluate/upload", response_model=CombinedEvaluationResponse, tags=["Policy Evaluation", "File Upload"])
+async def evaluate_policy_upload(
+    file: UploadFile = File(..., description="Policy document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    chunk_size: Optional[int] = Form(default=1000, description="Size of text chunks for processing"),
+    speed: Optional[str] = Form(default="deep", description="Analysis speed: 'deep' or 'fast'")
+):
+    """
+    Perform a comprehensive evaluation of a policy document file against standards.
+    
+    Upload a policy document (DOCX or PDF) and get comprehensive evaluation results.
+    """
+    return await handle_evaluate_policy_file(file, standards, chunk_size, speed)
+
+
+@app.post("/policies/analyze/fast/upload", response_model=FastAnalysisResponse, tags=["Policy Evaluation", "File Upload"])
+async def fast_analyze_policy_upload(
+    file: UploadFile = File(..., description="Policy document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    chunk_size: Optional[int] = Form(default=1000, description="Size of text chunks for processing")
+):
+    """
+    Perform a quick analysis of a policy document file against standards.
+    
+    Upload a policy document (DOCX or PDF) and get fast analysis results.
+    """
+    return await handle_fast_analyze_policy_file(file, standards, chunk_size)
+
+
+# =============================================================================
+# USE CASE PROCESSING ENDPOINTS
+# =============================================================================
+
+# Text-based endpoints
+@app.post("/use-cases/kpis", response_model=KPIAnalysisResponse, tags=["Use Case Processor"])
 async def analyze_use_case_kpis_endpoint(request: UseCaseRequest):
     """
     Analyze the security KPIs for a use case.
@@ -258,13 +225,10 @@ async def analyze_use_case_kpis_endpoint(request: UseCaseRequest):
     This endpoint evaluates a security use case against industry standard security KPIs
     and provides scores, analysis, and recommendations for improvement.
     """
-    try:
-        results = analyze_use_case_kpis(request.use_case, request.standards, request.policies)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error analyzing use case KPIs: {str(e)}")
+    return await handle_analyze_use_case_kpis(request)
 
-@app.post("/api/v1/use-case/analyze-deployment", response_model=DeploymentAnalysisResponse, tags=["Use Case Processor"])
+
+@app.post("/use-cases/deployment", response_model=DeploymentAnalysisResponse, tags=["Use Case Processor"])
 async def analyze_deployment_endpoint(request: UseCaseRequest):
     """
     Analyze the deployment aspects of a security use case.
@@ -272,13 +236,10 @@ async def analyze_deployment_endpoint(request: UseCaseRequest):
     This endpoint evaluates the feasibility, pros, cons, timeline, and resource requirements
     for implementing a security use case.
     """
-    try:
-        results = analyze_deployment(request.use_case, request.standards, request.policies)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error analyzing deployment aspects: {str(e)}")
+    return await handle_analyze_deployment(request)
 
-@app.post("/api/v1/use-case/judge", response_model=UseCaseJudgmentResponse, tags=["Use Case Processor"])
+
+@app.post("/use-cases/judge", response_model=UseCaseJudgmentResponse, tags=["Use Case Processor"])
 async def judge_use_case_endpoint(request: UseCaseRequest):
     """
     Judge the quality and effectiveness of a security use case.
@@ -286,13 +247,10 @@ async def judge_use_case_endpoint(request: UseCaseRequest):
     This endpoint evaluates how well a security use case addresses security requirements
     and aligns with standards and policies.
     """
-    try:
-        results = judge_use_case(request.use_case, request.standards, request.policies)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error judging use case: {str(e)}")
+    return await handle_judge_use_case(request)
 
-@app.post("/api/v1/use-case/process", response_model=CompleteUseCaseProcessingResponse, tags=["Use Case Processor"])
+
+@app.post("/use-cases/process", response_model=CompleteUseCaseProcessingResponse, tags=["Use Case Processor"])
 async def process_use_case_endpoint(request: UseCaseRequest):
     """
     Process a security use case with comprehensive analysis.
@@ -300,11 +258,123 @@ async def process_use_case_endpoint(request: UseCaseRequest):
     This endpoint combines KPI analysis, deployment analysis, judgment, and aggregated assessment
     into a complete evaluation of a security use case.
     """
-    try:
-        results = process_use_case(request.use_case, request.standards, request.policies)
-        return results
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing use case: {str(e)}")
+    return await handle_process_use_case(request)
+
+
+# File upload endpoints
+@app.post("/use-cases/kpis/upload", response_model=KPIAnalysisResponse, tags=["Use Case Processor", "File Upload"])
+async def analyze_use_case_kpis_upload(
+    file: UploadFile = File(..., description="Use case document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    policies: Optional[List[str]] = Form(default=None, description="List of policies to evaluate against")
+):
+    """
+    Analyze the security KPIs for a use case document file.
+    
+    Upload a use case document (DOCX or PDF) and get KPI analysis results.
+    """
+    return await handle_analyze_use_case_kpis_file(file, standards, policies)
+
+
+@app.post("/use-cases/deployment/upload", response_model=DeploymentAnalysisResponse, tags=["Use Case Processor", "File Upload"])
+async def analyze_deployment_upload(
+    file: UploadFile = File(..., description="Use case document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    policies: Optional[List[str]] = Form(default=None, description="List of policies to evaluate against")
+):
+    """
+    Analyze the deployment aspects of a use case document file.
+    
+    Upload a use case document (DOCX or PDF) and get deployment analysis results.
+    """
+    return await handle_analyze_deployment_file(file, standards, policies)
+
+
+@app.post("/use-cases/judge/upload", response_model=UseCaseJudgmentResponse, tags=["Use Case Processor", "File Upload"])
+async def judge_use_case_upload(
+    file: UploadFile = File(..., description="Use case document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    policies: Optional[List[str]] = Form(default=None, description="List of policies to evaluate against")
+):
+    """
+    Judge the quality and effectiveness of a use case document file.
+    
+    Upload a use case document (DOCX or PDF) and get use case judgment results.
+    """
+    return await handle_judge_use_case_file(file, standards, policies)
+
+
+@app.post("/use-cases/process/upload", response_model=CompleteUseCaseProcessingResponse, tags=["Use Case Processor", "File Upload"])
+async def process_use_case_upload(
+    file: UploadFile = File(..., description="Use case document file (DOCX or PDF)"),
+    standards: Optional[List[str]] = Form(default=None, description="List of standards to evaluate against"),
+    policies: Optional[List[str]] = Form(default=None, description="List of policies to evaluate against")
+):
+    """
+    Process a use case document file with comprehensive analysis.
+    
+    Upload a use case document (DOCX or PDF) and get complete processing results.
+    """
+    return await handle_process_use_case_file(file, standards, policies)
+
+
+# =============================================================================
+# LEGACY ENDPOINTS (for backward compatibility)
+# =============================================================================
+
+@app.post("/api/v1/identify-gaps", response_model=GapAnalysisResponse, tags=["Legacy API"])
+async def legacy_gap_identification(request: PolicyEvaluationRequest):
+    """Legacy endpoint for gap identification. Use /policies/gaps instead."""
+    return await handle_gap_identification(request)
+
+
+@app.post("/api/v1/check-compliance", response_model=ComplianceCheckResponse, tags=["Legacy API"])
+async def legacy_compliance_checking(request: PolicyEvaluationRequest):
+    """Legacy endpoint for compliance checking. Use /policies/compliance instead."""
+    return await handle_compliance_checking(request)
+
+
+@app.post("/api/v1/enhance-policy", response_model=PolicyEnhancementResponse, tags=["Legacy API"])
+async def legacy_policy_enhancement(request: PolicyEvaluationRequest):
+    """Legacy endpoint for policy enhancement. Use /policies/enhance instead."""
+    return await handle_policy_enhancement(request)
+
+
+@app.post("/api/v1/evaluate-policy", response_model=CombinedEvaluationResponse, tags=["Legacy API"])
+async def legacy_evaluate_policy(request: PolicyEvaluationRequestWithSpeed):
+    """Legacy endpoint for policy evaluation. Use /policies/evaluate instead."""
+    return await handle_evaluate_policy(request)
+
+
+@app.post("/api/v1/fast-analyze", response_model=FastAnalysisResponse, tags=["Legacy API"])
+async def legacy_fast_analyze_policy(request: PolicyEvaluationRequest):
+    """Legacy endpoint for fast analysis. Use /policies/analyze/fast instead."""
+    return await handle_fast_analyze_policy(request)
+
+
+@app.post("/api/v1/use-case/analyze-kpis", response_model=KPIAnalysisResponse, tags=["Legacy API"])
+async def legacy_analyze_use_case_kpis_endpoint(request: UseCaseRequest):
+    """Legacy endpoint for use case KPI analysis. Use /use-cases/kpis instead."""
+    return await handle_analyze_use_case_kpis(request)
+
+
+@app.post("/api/v1/use-case/analyze-deployment", response_model=DeploymentAnalysisResponse, tags=["Legacy API"])
+async def legacy_analyze_deployment_endpoint(request: UseCaseRequest):
+    """Legacy endpoint for deployment analysis. Use /use-cases/deployment instead."""
+    return await handle_analyze_deployment(request)
+
+
+@app.post("/api/v1/use-case/judge", response_model=UseCaseJudgmentResponse, tags=["Legacy API"])
+async def legacy_judge_use_case_endpoint(request: UseCaseRequest):
+    """Legacy endpoint for use case judgment. Use /use-cases/judge instead."""
+    return await handle_judge_use_case(request)
+
+
+@app.post("/api/v1/use-case/process", response_model=CompleteUseCaseProcessingResponse, tags=["Legacy API"])
+async def legacy_process_use_case_endpoint(request: UseCaseRequest):
+    """Legacy endpoint for use case processing. Use /use-cases/process instead."""
+    return await handle_process_use_case(request)
+
 
 # Serve the application
 if __name__ == "__main__":

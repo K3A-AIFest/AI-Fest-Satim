@@ -62,6 +62,7 @@ When analyzing a use case for security KPIs:
 4. Calculate an overall security score with weighted importance for financial systems
 5. Determine risk level based on scores (CRITICAL < 60, HIGH 60-75, MEDIUM 75-85, LOW > 85)
 6. Provide actionable recommendations specific to banking/financial security
+7. Make sure to rename system variables to match the tool function parameters signature.
 
 You have access to specialized KPI calculation tools that you should use to compute accurate metrics.
 
@@ -100,7 +101,7 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         kpi_tools = get_kpi_tools()
         super().__init__(system_prompt=system_prompt, tools=kpi_tools)
     
-    def analyze_security_kpis(self, use_case: str, system_data: Optional[Dict[str, Any]] = None, 
+    def analyze_security_kpis(self, use_case: str, 
                             standards: Optional[List[str]] = None, 
                             policies: Optional[List[str]] = None) -> Dict[str, Any]:
         """
@@ -108,7 +109,7 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         
         Args:
             use_case: The security use case text to analyze
-            system_data: Optional dictionary containing system metrics and data
+
             standards: Optional list of relevant standard documents to reference
             policies: Optional list of policy documents to reference
             
@@ -122,7 +123,7 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         # Prepare context information
         policies_text = "\n\n".join(policies) if policies else "No specific policies provided."
         standards_text = "\n\n".join(standards) if standards else "General financial security standards apply."
-        system_data_text = json.dumps(system_data, indent=2) if system_data else "No specific system data provided."
+
         
         prompt = f"""
         I need you to analyze this security use case for banking/financial systems and calculate comprehensive security KPIs.
@@ -131,7 +132,7 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         {use_case}
         
         ## SYSTEM DATA (for calculations):
-        {system_data_text}
+    YOU SHOULD EXTRACT RELEVANT METRICS FROM THE USE CASE TEXT. and use them to calculate the KPIs.
         
         ## STANDARDS TO REFERENCE:
         {standards_text}

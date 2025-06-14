@@ -80,25 +80,36 @@ def main():
     # Process the use case
     result = process_use_case(use_case, standards, policies)
     
-    # Display the results
-    print("\n===== USE CASE PROCESSOR RESULTS =====")
-    print(f"Overall Score: {result['aggregated_analysis']['overall_score']}")
-    print(f"Overall Assessment: {result['aggregated_analysis']['overall_assessment']}")
-    
-    print("\n--- Key Findings ---")
-    for i, finding in enumerate(result['aggregated_analysis']['key_findings'], 1):
-        print(f"{i}. {finding}")
-    
-    print("\n--- Recommended Next Steps ---")
-    for i, step in enumerate(result['aggregated_analysis']['recommended_next_steps'], 1):
-        print(f"{i}. {step}")
-    
-    # Save the full result to a JSON file for detailed review
+    # Save the full result to a JSON file for detailed review first
     output_file = project_root / "use_case_processor_test_result.json"
     with open(output_file, 'w') as f:
         json.dump(result, f, indent=2)
     
     print(f"\nFull results saved to: {output_file}")
+    
+    # Check what we got back
+    print("\n===== RESULT STRUCTURE =====")
+    print(f"Result type: {type(result)}")
+    print(f"Result keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+    
+    # Display the results if available
+    print("\n===== USE CASE PROCESSOR RESULTS =====")
+    if isinstance(result, dict) and 'aggregated_analysis' in result and result['aggregated_analysis']:
+        print(f"Overall Score: {result['aggregated_analysis']['overall_score']}")
+        print(f"Overall Assessment: {result['aggregated_analysis']['overall_assessment']}")
+        
+        print("\n--- Key Findings ---")
+        for i, finding in enumerate(result['aggregated_analysis']['key_findings'], 1):
+            print(f"{i}. {finding}")
+        
+        print("\n--- Recommended Next Steps ---")
+        for i, step in enumerate(result['aggregated_analysis']['recommended_next_steps'], 1):
+            print(f"{i}. {step}")
+    else:
+        print("aggregated_analysis not available or is None")
+        print("Available data:")
+        for key, value in result.items():
+            print(f"  {key}: {type(value)}")
 
 if __name__ == "__main__":
     main()

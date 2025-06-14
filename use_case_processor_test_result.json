@@ -1,194 +1,172 @@
 {
   "use_case_content": "\n    Security Use Case: Multi-Factor Authentication Implementation\n    \n    Description:\n    This use case details the implementation of Multi-Factor Authentication (MFA) across all corporate systems to enhance security posture and reduce unauthorized access risks.\n    \n    Objectives:\n    1. Implement MFA for all user accounts across critical systems\n    2. Reduce unauthorized access incidents by 80%\n    3. Ensure compliance with PCI-DSS and internal security policies\n    \n    Implementation Details:\n    - Deploy MFA solution that supports multiple authentication methods (SMS, app-based tokens, hardware tokens)\n    - Integrate with current identity management system\n    - Implement risk-based authentication for sensitive operations\n    - Create user training materials for new authentication procedures\n    - Establish monitoring for failed authentication attempts\n    \n    Success Metrics:\n    - 100% of critical systems protected by MFA within 3 months\n    - Reduction in successful phishing attacks by 70%\n    - User adoption rate of 95% within 6 months\n    \n    Timeline:\n    - Phase 1 (Month 1-2): Implementation for admin accounts\n    - Phase 2 (Month 2-4): Implementation for all employee accounts\n    - Phase 3 (Month 4-6): Implementation for external partners\n    \n    Resources:\n    - Identity management team (2 FTE)\n    - Security engineering (1 FTE)\n    - Help desk support for user training (temporary)\n    - Estimated budget: $150,000\n    ",
   "kpi_analysis": {
-    "kpi_scores": {
-      "vulnerability_management": 10,
-      "mttd_estimate": 70,
-      "mttr_estimate": 60,
-      "security_coverage_score": 80,
-      "risk_reduction_percentage": 90,
-      "compliance_coverage_percentage": 95,
-      "security_control_implementation_score": 90,
-      "security_testing_coverage": 30,
-      "security_training_effectiveness": 85,
-      "incident_response_readiness": 50
-    },
-    "analysis": {
-      "vulnerability_management": "The use case is focused on authentication and does not include activities related to system vulnerability management, hence the low score in this area.",
-      "mttd_estimate": "Monitoring failed authentication attempts is included in the implementation details, which aids in detecting brute force or credential stuffing attempts. Detection capabilities could be enhanced with behavioral analytics.",
-      "mttr_estimate": "The use case outlines detection mechanisms (monitoring) but lacks specific details on automated or manual response procedures triggered by detected events, such as account lockouts or security team alerts.",
-      "security_coverage_score": "The use case provides broad coverage by implementing MFA across all corporate systems and user types as per objectives. This addresses a critical security layer (authentication) comprehensively within its domain, but it is limited to this specific security area.",
-      "risk_reduction_percentage": "The use case directly targets a significant reduction in unauthorized access incidents (80% objective), which is a primary and well-documented risk effectively mitigated by strong MFA implementation.",
-      "compliance_coverage_percentage": "The use case demonstrates strong alignment with key compliance requirements (PCI-DSS 8.2.1, 8.2.3) and the explicit Corporate Authentication Policy, addressing specific mandates for strong authentication.",
-      "security_control_implementation_score": "The implementation plan is comprehensive for the MFA control, including support for various methods, integration with identity management, and risk-based policies, indicating a high likelihood of successful deployment of the control.",
-      "security_testing_coverage": "The use case does not explicitly detail security testing plans for the MFA implementation itself (e.g., penetration testing, testing against known bypass methods) to ensure its effectiveness and resilience post-deployment.",
-      "security_training_effectiveness": "Training is included as a key part of the rollout plan, and success is tied to a user adoption metric (95% target), indicating consideration for user effectiveness in utilizing the new control.",
-      "incident_response_readiness": "While monitoring supports detection which is the first step in IR, the use case lacks details on how incident response teams are integrated, specific playbooks for MFA-related incidents, or the process for handling potential MFA bypass attempts effectively."
-    },
-    "overall_score": 66.0,
+    "kpi_scores": {},
+    "analysis": {},
+    "overall_score": 0,
     "recommendations": [
-      "Implement dedicated security testing for the MFA solution, including penetration testing and testing against known bypass techniques, before and after full deployment.",
-      "Develop specific incident response playbooks for MFA-related events, such as excessive failed attempts, suspected bypass attempts, or MFA system failures.",
-      "Ensure integration of MFA monitoring alerts directly into security operations center (SOC) workflows and incident response processes with defined alert prioritization and escalation paths.",
-      "Consider implementing behavioral analytics or adaptive authentication based on user behavior to enhance detection capabilities for anomalous login patterns beyond simple failed attempts.",
-      "Explicitly define automated or manual response procedures triggered by monitoring alerts (e.g., automatic account lockouts after X failed attempts, forced password resets, immediate security team notification).",
-      "Link this use case to broader security initiatives and risk management frameworks to ensure comprehensive security coverage across multiple domains, not solely authentication."
-    ]
+      "Error analyzing KPIs: Invalid json output: \nFor troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/OUTPUT_PARSING_FAILURE "
+    ],
+    "risk_level": "CRITICAL"
   },
   "deployment_analysis": {
-    "feasibility_score": 85.0,
+    "feasibility_score": 90.0,
     "pros": [
-      "Significantly enhances the organization's security posture",
-      "Directly addresses PCI-DSS requirements 8.2.1 and 8.2.3 for strong authentication and remote access",
-      "Ensures compliance with the Corporate Authentication Policy",
-      "Reduces the risk of unauthorized access due to compromised credentials",
-      "Helps in achieving the objective of reducing successful phishing attacks",
-      "Provides multiple authentication methods for user flexibility",
-      "Implements risk-based authentication for enhanced security on sensitive operations"
+      "Significantly enhances security posture by preventing unauthorized access",
+      "Meets critical regulatory requirements (PCI-DSS, likely others like SOX for access controls)",
+      "Reduces risk of successful phishing and credential stuffing attacks",
+      "Improves audit trail integrity by strengthening identity verification",
+      "Aligns with corporate security policies"
     ],
     "cons": [
       "Potential for user friction and resistance during adoption",
-      "Integration challenges with diverse and potentially legacy corporate systems",
-      "Requires significant upfront planning and coordination across departments",
-      "Increased load on Help Desk for user support during and after rollout",
-      "Potential compatibility issues with certain applications or services",
-      "Ongoing maintenance and management of the MFA solution and user accounts",
-      "Initial investment cost for the MFA solution and implementation"
+      "Requires significant integration effort, especially with diverse and legacy systems",
+      "Increased load on help desk for user support and token management",
+      "Initial investment and ongoing operational costs for the MFA solution",
+      "Potential impact on user login time, though typically minimal with modern solutions"
     ],
-    "timeline_estimate": "6-8 months",
+    "timeline_estimate": "6-12 months (including vendor selection, integration testing, phased rollout, and user training in a regulated environment)",
     "resource_requirements": [
-      "Identity management team (2 FTE)",
-      "Security engineering (1 FTE)",
-      "Help desk support (temporary increase during rollout)",
-      "Project Manager (part-time or full-time depending on complexity)",
-      "Vendor support for the MFA solution",
-      "Estimated budget: $150,000 (requires careful management to stay within budget)",
-      "User training resources and communication specialists"
+      "Identity Management Team (2+ FTE)",
+      "Security Engineering (1+ FTE)",
+      "IT Operations/Infrastructure Team (for deployment and maintenance)",
+      "Help Desk Support (temporary increase during rollout, ongoing support)",
+      "Compliance/Audit Team (for validation and policy adherence)",
+      "Project Management (dedicated)",
+      "Legal/Privacy Review (for data handling related to authentication factors)",
+      "Budget: $150,000+ (likely higher considering enterprise-grade solution, integration, and personnel costs)"
     ],
     "risk_factors": [
       {
-        "risk": "User resistance and low adoption rate",
+        "risk": "Integration challenges with legacy core banking systems and applications",
         "severity": "High",
-        "mitigation": "Comprehensive user training, clear communication on benefits, phased rollout, dedicated support channels, offering multiple authentication factor options."
+        "mitigation": "Conduct thorough system inventory and compatibility assessment. Develop custom connectors or APIs where needed. Implement a phased rollout with extensive testing in UAT environments."
       },
       {
-        "risk": "Integration failures with critical or legacy systems",
+        "risk": "User resistance and low adoption rates",
+        "severity": "Medium",
+        "mitigation": "Develop comprehensive user training and awareness programs. Provide multiple, user-friendly authentication options. Establish clear communication channels for support and feedback."
+      },
+      {
+        "risk": "Impact on system availability if MFA solution fails",
         "severity": "High",
-        "mitigation": "Thorough inventory and compatibility testing of all target systems, engaging vendors for support, developing custom connectors where necessary, phased integration by system criticality."
+        "mitigation": "Select a highly available MFA solution with redundancy and failover capabilities. Implement robust monitoring and alerting for the MFA infrastructure. Develop clear fallback procedures."
       },
       {
-        "risk": "Increased burden on Help Desk leading to support bottlenecks",
+        "risk": "Budget overruns due to unforeseen integration complexities or required solution features",
         "severity": "Medium",
-        "mitigation": "Provide extensive training to Help Desk staff, create comprehensive self-service documentation and FAQs, scale temporary Help Desk resources during peak rollout phases."
+        "mitigation": "Conduct detailed planning and get accurate vendor quotes covering all required features and support. Allocate a contingency fund. Prioritize features based on strict requirements."
       },
       {
-        "risk": "Budget or timeline overruns",
+        "risk": "Choosing an MFA solution that doesn't scale with organizational growth and transaction volume",
         "severity": "Medium",
-        "mitigation": "Detailed project planning with contingency, regular monitoring of progress and spending, clear scope management, prioritizing integrations."
-      },
-      {
-        "risk": "Technical glitches or outages affecting user access",
-        "severity": "Medium",
-        "mitigation": "Thorough testing in staging environments, implementing in phases, having rollback plans, ensuring high availability of the MFA infrastructure."
+        "mitigation": "Assess the scalability architecture of potential solutions. Conduct load testing during implementation. Ensure the vendor has a clear roadmap for future capacity needs."
       }
     ]
   },
   "use_case_judgment": {
-    "effectiveness_score": 80.0,
+    "effectiveness_score": 88.0,
     "alignment_with_standards": [
       {
         "standard": "PCI DSS Requirement 8.2.1",
-        "alignment_score": 85,
-        "comments": "The use case aims to implement MFA for 'all user accounts across critical systems' and 'admin accounts', which broadly aligns with the requirement for strong authentication for users accessing CDE and MFA for non-console administrative access. However, it doesn't explicitly call out 'Cardholder Data Environment' or 'non-console administrative access' specifically, relying on the broader scope to cover these areas. Explicitly mentioning these in the scope or objectives would strengthen alignment."
+        "alignment_score": 95,
+        "comments": "Well aligned, as the use case aims to implement MFA across all corporate systems, which would cover users accessing the CDE and non-console administrative access."
       },
       {
         "standard": "PCI DSS Requirement 8.2.3",
-        "alignment_score": 80,
-        "comments": "The use case aims for MFA 'across all corporate systems' which implies coverage for remote network access. However, it does not explicitly mention 'remote network access' as a specific target for MFA implementation. While the broad scope likely covers this, explicit mention would ensure direct alignment."
+        "alignment_score": 95,
+        "comments": "Well aligned, as implementing MFA across all corporate systems implicitly covers remote network access from outside the entity's network."
       }
     ],
     "alignment_with_policies": [
       {
         "policy": "Corporate Authentication Policy",
         "alignment_score": 85,
-        "comments": "The use case aligns well with the policy's requirement for MFA on 'all access to corporate systems' by targeting 'all user accounts across all corporate systems'. It also states support for 'multiple authentication methods (SMS, app-based tokens, hardware tokens)', which covers the 'something you have' category and potentially 'something you know' (depending on SMS implementation). However, it doesn't explicitly state that it will *enforce* the policy's requirement to use *at least two* factors from the defined categories per authentication event, only that the solution supports multiple methods. Explicitly stating the enforcement of the 'two-factor' rule as per the policy would improve alignment."
+        "comments": "Generally aligns by requiring MFA for all access and supporting multiple methods. Needs to explicitly confirm support for at least two distinct factors (Know/Have/Are) as per the policy requirements."
       }
     ],
-    "security_impact": "High positive impact. Implementing multi-factor authentication significantly reduces the risk of unauthorized access due to compromised credentials (phishing, brute force, credential stuffing). This is a fundamental security control that protects sensitive data and systems.",
+    "security_impact": "High positive impact. Implementing MFA significantly reduces the risk of unauthorized access due to compromised credentials, a major vector for fraud and data breaches in the financial sector. This directly enhances customer data protection and transaction integrity.",
     "gaps_identified": [
-      "Lack of specific definition for 'critical systems' and 'sensitive operations'.",
-      "Doesn't explicitly state how the policy requirement for using *at least two* distinct factors will be enforced.",
-      "Monitoring is mentioned only for 'failed authentication attempts'; monitoring successful MFA logins, anomalies, and alerts is not detailed.",
-      "No specific procedures for user enrollment, onboarding, or troubleshooting are detailed.",
-      "No mention of exception handling process (if any).",
-      "Success metrics include 'reduction in successful phishing attacks', which is an outcome MFA contributes to but is not solely dependent on MFA and is hard to measure directly attributable to MFA alone.",
-      "No detail on testing procedures (e.g., UAT, security testing).",
-      "Fallback or recovery procedures for users losing tokens/devices are not mentioned."
+      "The use case scope (admin, employee, external partners) does not explicitly mention customer access to financial services/portals, which is critical in banking.",
+      "Lack of explicit confirmation that the chosen MFA methods satisfy the 'at least two distinct factors' requirement (Know/Have/Are) of the Corporate Authentication Policy.",
+      "Does not explicitly address MFA requirements for service accounts or API access.",
+      "Missing integration details with existing fraud detection systems or security incident response procedures.",
+      "Does not mention specific considerations for regulatory reporting related to authentication security."
     ],
     "improvement_suggestions": [
-      "Define and list the 'critical systems' and 'sensitive operations' within the scope or an appendix.",
-      "Explicitly state that the implementation will enforce the corporate policy's requirement of using at least two distinct authentication factors per login.",
-      "Expand monitoring requirements to include successful MFA logins, detection of anomalous login patterns (e.g., impossible travel), and integration with SIEM for alerting and incident response.",
-      "Add a section detailing user enrollment workflows, help desk support procedures, and self-service options if available.",
-      "Include a process for managing and approving any potential exceptions to the MFA requirement.",
-      "Refine success metrics to include more direct measures of MFA implementation effectiveness, such as MFA adoption rate per system category, number of MFA challenges successfully completed vs. failed, and potentially the number of security incidents prevented where compromised credentials were the initial vector (if measurable).",
-      "Add a phase or section for testing, including user acceptance testing and security testing (e.g., penetration testing targeting the MFA implementation).",
-      "Include procedures for user account recovery and re-enrollment in case of lost or compromised authentication factors."
+      "Explicitly include customer-facing systems and customer accounts in the scope if applicable to ensure comprehensive protection.",
+      "Clarify which specific combinations of authentication methods will be used to ensure compliance with the 'at least two distinct factors' requirement of the Corporate Authentication Policy (e.g., password + hardware token).",
+      "Define requirements for authenticating non-human accounts like service accounts or API keys, potentially using alternative strong authentication methods.",
+      "Include steps for integrating MFA monitoring and logs with fraud detection platforms and the security incident response process.",
+      "Add a requirement to ensure the solution supports necessary logging and reporting capabilities for regulatory compliance."
     ]
   },
   "aggregated_analysis": {
-    "overall_assessment": "The Multi-Factor Authentication (MFA) implementation use case is a critical security initiative with high positive impact, significantly enhancing the organization's security posture and aligning strongly with compliance requirements like PCI-DSS and internal policies. While the plan demonstrates good feasibility and lays out a clear timeline and resource estimate, expert analyses highlight significant gaps in detailed planning for operational aspects, comprehensive testing, incident response integration, and specific scope definition. Addressing these gaps is crucial to ensure successful adoption, effective risk reduction, and robust operational readiness.",
+    "overall_assessment": "The proposed Multi-Factor Authentication (MFA) implementation use case presents a highly effective and feasible approach to significantly enhance security posture within banking and financial systems. It directly addresses critical risks such as unauthorized access, phishing, and credential stuffing, aligning strongly with key regulatory requirements like PCI-DSS. While the technical effectiveness and feasibility are rated highly (scores of 88.0 and 90.0 respectively), the analysis identified significant implementation challenges, particularly concerning integration with legacy systems and potential user adoption friction. A critical risk flag was raised by the failed KPI analysis, indicating potential issues with metrics or analysis processes that need urgent investigation. Key gaps include the explicit scope for customer accounts, service accounts, ensuring adherence to 'two distinct factors' policy, and integration with existing fraud detection and incident response frameworks. Overall, this initiative is critical for strengthening financial security but requires careful planning, robust resource allocation, and proactive risk mitigation, especially regarding integration complexity and ensuring comprehensive coverage.",
     "overall_score": 82.5,
     "key_findings": [
-      "Implementing MFA is a fundamental security control with high potential to reduce unauthorized access and successful phishing attacks.",
-      "The use case aligns well with PCI-DSS requirements (8.2.1, 8.2.3) and the Corporate Authentication Policy, though explicit detail on enforcement and specific scope elements would strengthen this.",
-      "Key risks include user resistance/adoption, integration challenges with diverse systems, and increased burden on the Help Desk.",
-      "Significant planning gaps exist in detailed security testing, comprehensive monitoring (beyond failed attempts), integration with incident response workflows, user enrollment/recovery procedures, and defining 'critical systems'/'sensitive operations'.",
-      "The timeline estimate varies slightly between the use case (6 months) and deployment analysis (6-8 months), suggesting potential for minor delays.",
-      "The use case focuses narrowly on authentication and lacks integration with broader security processes like vulnerability management or detailed incident response playbooks specific to MFA events."
+      "High potential to significantly reduce unauthorized access, phishing, and credential stuffing risks.",
+      "Strong alignment with critical banking security standards (e.g., PCI-DSS 8.2.1, 8.2.3) and corporate policies.",
+      "Considered highly feasible from a deployment perspective.",
+      "Requires significant integration effort, particularly with diverse and legacy banking systems.",
+      "Potential for user friction and resistance during adoption.",
+      "Identified gaps in scope regarding customer access, service accounts, and explicit confirmation of 'two distinct factors' for policy compliance.",
+      "Lack of explicit detail on integration with existing fraud detection and security incident response systems.",
+      "Budget and timeline estimates may be underestimated given the complexity of a regulated environment.",
+      "The KPI analysis failed and flagged a critical risk level, requiring further investigation into metrics or analysis process."
     ],
     "critical_considerations": [
-      "User adoption and managing potential friction are high-severity risks requiring dedicated effort in training and support.",
-      "Thorough integration testing with critical and legacy systems is essential to prevent operational disruption.",
-      "Detailed planning for monitoring successful logins, anomalous behavior, and integrating alerts into SIEM/SOC workflows is necessary for effective detection and response.",
-      "Developing specific incident response procedures for MFA-related events (e.g., suspected bypass, excessive failures) is critical.",
-      "Clear definition of the scope, including 'critical systems' and 'sensitive operations', is needed to ensure all necessary assets are covered.",
-      "Budget and timeline must be carefully managed, with contingencies for integration or adoption challenges."
+      "Integration complexity and potential disruption to existing critical banking systems.",
+      "Ensuring high availability and failover capabilities for the MFA solution to prevent impact on system access.",
+      "Developing a comprehensive user training and support strategy to mitigate resistance and ensure high adoption rates.",
+      "Accurate budget forecasting and resource allocation, accounting for unforeseen integration issues and ongoing costs.",
+      "Explicitly defining and implementing MFA requirements for customer access and non-human accounts (service accounts, APIs).",
+      "Verifying and documenting that the chosen authentication methods meet the 'at least two distinct factors' requirement of internal policies.",
+      "Integrating MFA authentication logs and events into fraud detection and security incident response workflows.",
+      "Ensuring the solution provides necessary logging and reporting capabilities to meet regulatory compliance requirements.",
+      "Investigating the root cause of the failed KPI analysis and the associated critical risk assessment."
     ],
     "recommended_next_steps": [
-      "Develop detailed plans for user enrollment, onboarding, troubleshooting, and account recovery procedures, including self-service options where possible.",
-      "Define and list the specific 'critical systems' and 'sensitive operations' included in the scope.",
-      "Expand monitoring requirements to include successful MFA logins, detection of anomalous patterns (e.g., impossible travel), and ensure integration with SIEM for alerting and incident response.",
-      "Develop specific incident response playbooks for MFA-related events and integrate them into existing SOC workflows.",
-      "Implement a comprehensive testing phase including user acceptance testing (UAT) and security testing (e.g., penetration testing targeting MFA bypass methods).",
-      "Explicitly state how the corporate policy's requirement for using at least two distinct authentication factors will be enforced by the solution.",
-      "Refine success metrics to include more direct measures of MFA effectiveness, such as MFA adoption rate per system, number of MFA challenges completed vs. failed, and potentially incidents prevented.",
-      "Establish a process for managing and approving any potential exceptions to the MFA requirement.",
-      "Provide extensive training and resources to the Help Desk team to handle increased support volume during and after rollout."
+      "Conduct a detailed inventory and compatibility assessment of all systems requiring MFA integration, focusing on legacy platforms.",
+      "Refine the project scope to explicitly include customer-facing systems and service/API accounts where applicable.",
+      "Develop a comprehensive change management plan, including targeted user training and ongoing support resources.",
+      "Select an MFA solution with proven scalability, high availability features, and strong integration capabilities.",
+      "Update budget and timeline estimates based on detailed integration planning and vendor quotes.",
+      "Formally verify and document how the selected MFA methods satisfy the 'at least two distinct factors' policy requirement.",
+      "Design and implement integration points between the MFA solution and existing fraud monitoring and security alerting systems.",
+      "Define and configure required logging, monitoring, and reporting for compliance and security operations.",
+      "Immediately investigate the failure of the KPI analysis and the associated critical risk level to understand its implications."
     ],
     "stakeholder_considerations": {
       "executive_management": [
-        "Understand the high positive security impact and risk reduction potential.",
-        "Approve budget and resource allocation, considering potential for minor overruns based on deployment analysis.",
-        "Support change management efforts to mitigate user resistance and drive adoption.",
-        "Ensure strategic alignment with overall risk management objectives."
+        "Review overall risk reduction and ROI potential.",
+        "Assess alignment with strategic security objectives and regulatory mandates.",
+        "Evaluate potential impact on operational efficiency and user experience.",
+        "Approve necessary budget and resource allocation, including contingency."
       ],
       "security_team": [
-        "Focus on detailed planning for security testing, monitoring, and incident response integration.",
-        "Ensure explicit enforcement of the corporate authentication policy.",
-        "Work closely with the Identity Management team on integration challenges.",
-        "Refine metrics to accurately measure the security effectiveness of the implementation."
+        "Ensure technical requirements for integration with SIEM, fraud detection, and incident response are met.",
+        "Plan for ongoing management, monitoring, and incident response related to the MFA infrastructure.",
+        "Verify compliance with technical security standards and policies.",
+        "Address technical risks related to solution availability and scalability."
       ],
       "operations_team": [
-        "Plan for increased load on Help Desk and ensure adequate training and resources.",
-        "Prepare for system integration challenges and work with vendors/security engineering.",
-        "Establish ongoing maintenance and management procedures for the MFA solution.",
-        "Implement and monitor the technical infrastructure supporting MFA for availability and performance."
+        "Plan for deployment, configuration, and ongoing maintenance of the MFA infrastructure.",
+        "Assess impact on existing IT operations, including help desk support requirements.",
+        "Develop monitoring and alerting procedures for MFA system health and security events.",
+        "Establish fallback and disaster recovery procedures for the MFA solution."
       ],
       "compliance": [
-        "Verify explicit alignment with specific PCI-DSS requirements (8.2.1, 8.2.3) covering CDE access and remote access.",
-        "Ensure the implementation enforces the requirements of the Corporate Authentication Policy, particularly regarding the use of two distinct factors.",
-        "Establish a clear and documented process for managing and approving any exceptions to the MFA policy."
+        "Verify alignment with PCI-DSS and other relevant financial regulations (e.g., GLBA, NYDFS).",
+        "Ensure policies regarding multi-factor authentication (e.g., 'two distinct factors') are fully met and documented.",
+        "Confirm that audit trails and reporting capabilities meet regulatory requirements.",
+        "Review data handling and privacy considerations related to authentication factors."
+      ],
+      "risk_management": [
+        "Conduct a thorough risk assessment, focusing on integration risks, availability risks, and user adoption risks.",
+        "Perform a business impact analysis to understand the consequences of MFA system failure.",
+        "Evaluate the effectiveness of proposed mitigation strategies for identified risks.",
+        "Assess the overall reduction in unauthorized access and fraud risk provided by the implementation."
       ]
     }
   }

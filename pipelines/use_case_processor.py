@@ -10,14 +10,14 @@ This module contains the main pipeline for use case evaluation against standards
 import json
 import logging
 from typing import List, Dict, Any, Optional
-from agents.evaluation_agents import (
-    KPIAnalyzerAgent,
+from agents.use_case_agents import (
+
     DeploymentAnalyzerAgent,
     UseCaseJudgeAgent,
     AnalysisAggregatorAgent
 )
 from tools.vector_db import fetch_relevant_standards, fetch_relevant_policies
-
+from agents.kpi_agent import KPIAgent
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class UseCaseProcessingPipeline:
         """
         Initialize the pipeline with expert agents.
         """
-        self.kpi_analyzer = KPIAnalyzerAgent()
+        self.kpi_analyzer = KPIAgent()
         self.deployment_analyzer = DeploymentAnalyzerAgent()
         self.use_case_judge = UseCaseJudgeAgent()
         self.analysis_aggregator = AnalysisAggregatorAgent()
@@ -99,7 +99,7 @@ class UseCaseProcessingPipeline:
         
         # Step 1: Analyze KPIs
         logger.info("Analyzing security KPIs")
-        kpi_analysis = self.kpi_analyzer.analyze_kpis(
+        kpi_analysis = self.kpi_analyzer.analyze_security_kpis(
             use_case=use_case,
             standards=use_case_standards,
             policies=use_case_policies
@@ -161,7 +161,7 @@ def analyze_use_case_kpis(use_case: str, standards: List[str], policies: Optiona
     kpi_analyzer = pipeline.kpi_analyzer
     
     # Analyze KPIs
-    kpi_analysis = kpi_analyzer.analyze_kpis(use_case, standards, policies)
+    kpi_analysis = kpi_analyzer.analyze_security_kpis(use_case, standards, policies)
     
     return kpi_analysis
 

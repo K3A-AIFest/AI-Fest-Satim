@@ -6,9 +6,35 @@ This module contains the specialized agents for:
 2. Compliance checking - evaluates how well policies comply with standards
 3. Enhancement - suggests improvements for policies based on standards
 """
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Sequence
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain.output_parsers.openai_functions import PydanticOutputFunctionsParser
+from langchain_core.output_parsers import JsonOutputParser
+import json
 from agents.base import Agent
+
+# Pydantic models for structured output
+class GapAnalysisOutput(BaseModel):
+    """Structured output for gap analysis"""
+    classification: str = Field(description="Classification of the gap analysis (GOOD, MISSING, or NON_COMPLIANT)")
+    gaps: List[str] = Field(description="List of specific gaps found")
+    rationale: str = Field(description="Reasoning for this classification with evidence from policy and standards")
+    references: List[str] = Field(description="Specific references to standards sections/requirements")
+
+class ComplianceAssessmentOutput(BaseModel):
+    """Structured output for compliance assessment"""
+    classification: str = Field(description="Classification of the compliance assessment (GOOD, MISSING, or NON_COMPLIANT)")
+    issues: List[str] = Field(description="List of specific compliance issues found")
+    rationale: str = Field(description="Reasoning for this classification with evidence from policy and standards")
+    references: List[str] = Field(description="Specific references to standards sections/requirements")
+
+class PolicyEnhancementOutput(BaseModel):
+    """Structured output for policy enhancement"""
+    classification: str = Field(description="Classification of the enhancement assessment (GOOD, MISSING, or NON_COMPLIANT)")
+    enhanced_content: str = Field(description="The improved policy content with enhancements")
+    changes: List[str] = Field(description="List of specific enhancements made")
+    rationale: str = Field(description="Detailed reasoning for these enhancements")
 
 class GapCheckerAgent(Agent):
     """
@@ -16,7 +42,7 @@ class GapCheckerAgent(Agent):
     """
     
     def __init__(self):
-        system_prompt = """You are an expert Gap Analysis Agent specializing in identifying missing elements in security policies when compared to standards. 
+        system_prompt = """You are an expert Gap Analysis Agent specializing in identifying missing elements in security policies when compared to standards.
         
 Your task is to carefully examine security policy content and identify what elements are missing when compared to the provided standards.
 
@@ -26,14 +52,12 @@ When analyzing a policy chunk against standards:
 3. Provide clear references to the specific sections/requirements in the standards that are not addressed.
 4. Consider both explicit gaps (completely missing elements) and implicit gaps (partially addressed elements).
 5. Classify your findings as either "GOOD" (no significant gaps), "MISSING" (has gaps), or "NON_COMPLIANT" (contradicts standards).
-6. Always provide justification for your classification using evidence from both the policy and standards.
 
-Your output should be in the following format:
+OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
 {
-  "chunk_content": "<The policy chunk you analyzed>",
-  "classification": "<GOOD, MISSING, or NON_COMPLIANT>",
-  "gaps_identified": ["<List of specific gaps found>"],
-  "justification": "<Your detailed reasoning for this classification>",
+  "classification": "<GOOD, MISSING>",
+  "gaps": ["<List of specific gaps found>"], 
+  "rationale": "<Your reasoning for this classification with evidence from policy and standards>",
   "references": ["<Specific references to standards sections/requirements>"]
 }"""
 
@@ -51,7 +75,11 @@ Your output should be in the following format:
         Returns:
             Analysis result with classification, identified gaps, and justification
         """
-        # Prepare prompt for the LLM
+        # Use Langchain's structured output parser with our pydantic model
+        parser = JsonOutputParser(pydantic_object=GapAnalysisOutput)
+        format_instructions = parser.get_format_instructions()
+        
+        # Prepare prompt for the LLM with clear instructions for structured output
         prompt = f"""
         I need you to analyze this security policy chunk and identify any gaps when compared to the provided standards.
         
@@ -62,6 +90,14 @@ Your output should be in the following format:
         {standards}
         
         Follow your instructions to identify gaps, classify the chunk, and provide a detailed justification.
+        
+        YOU MUST RETURN ONLY A SINGLE JSON OBJECT with the following fields:
+        - classification: GOOD,  NON_COMPLIANT
+        - gaps: Array of strings describing specific gaps found
+        - rationale: String explaining your reasoning
+        - references: Array of strings with specific standard references
+        
+        {format_instructions}
         """
         
         # Create messages for the agent
@@ -73,8 +109,36 @@ Your output should be in the following format:
         # Get response from LLM
         response = self._invoke_with_retry(messages)
         
-        # Return the response content
-        return {"analysis": response.content}
+        try:
+            # Parse the response to ensure it's in the correct format
+            parsed_response = parser.parse(response.content)
+            return parsed_response
+        except Exception as e:
+            # If parsing fails, try to extract JSON from the response
+            try:
+                # Look for JSON content in the response
+                content = response.content
+                if "```json" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                    return json.loads(json_str)
+                elif content.strip().startswith("{") and content.strip().endswith("}"):
+                    return json.loads(content)
+                else:
+                    # Return a basic structure if we can't parse JSON
+                    return {
+                        "classification": "ERROR",
+                        "gaps": [],
+                        "rationale": f"Failed to parse response: {content[:100]}...",
+                        "references": []
+                    }
+            except Exception as inner_e:
+                # Last resort fallback
+                return {
+                    "classification": "ERROR",
+                    "gaps": [],
+                    "rationale": f"Failed to parse response: {str(e)}. Inner error: {str(inner_e)}",
+                    "references": []
+                }
 
 
 class ComplianceCheckerAgent(Agent):
@@ -93,14 +157,12 @@ When analyzing a policy chunk against standards:
 3. Rate the compliance level with justification, citing specific sections from both policy and standards.
 4. Look for inconsistencies, contradictions, or requirements that are not properly implemented.
 5. Classify your findings as either "GOOD" (complies well), "MISSING" (missing elements), or "NON_COMPLIANT" (contradicts standards).
-6. Always provide justification for your classification using evidence from both the policy and standards.
 
-Your output should be in the following format:
+OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
 {
-  "chunk_content": "<The policy chunk you analyzed>",
   "classification": "<GOOD, MISSING, or NON_COMPLIANT>",
-  "compliance_issues": ["<List of specific compliance issues found>"],
-  "justification": "<Your detailed reasoning for this classification>",
+  "issues": ["<List of specific compliance issues found>"],
+  "rationale": "<Your reasoning for this classification with evidence from policy and standards>",
   "references": ["<Specific references to standards sections/requirements>"]
 }"""
 
@@ -118,6 +180,10 @@ Your output should be in the following format:
         Returns:
             Compliance assessment with classification, issues found, and justification
         """
+        # Configure the parser for structured output
+        parser = JsonOutputParser(pydantic_object=ComplianceAssessmentOutput)
+        format_instructions = parser.get_format_instructions()
+        
         # Prepare prompt for the LLM
         prompt = f"""
         I need you to check the compliance of this security policy chunk against the provided standards.
@@ -129,6 +195,14 @@ Your output should be in the following format:
         {standards}
         
         Follow your instructions to check compliance, classify the chunk, and provide a detailed justification.
+        
+        YOU MUST RETURN ONLY A SINGLE JSON OBJECT with the following fields:
+        - classification: GOOD, MISSING, or NON_COMPLIANT
+        - issues: Array of strings describing specific compliance issues found
+        - rationale: String explaining your reasoning
+        - references: Array of strings with specific standard references
+        
+        {format_instructions}
         """
         
         # Create messages for the agent
@@ -140,8 +214,36 @@ Your output should be in the following format:
         # Get response from LLM
         response = self._invoke_with_retry(messages)
         
-        # Return the response content
-        return {"assessment": response.content}
+        try:
+            # Parse the response to ensure it's in the correct format
+            parsed_response = parser.parse(response.content)
+            return parsed_response
+        except Exception as e:
+            # If parsing fails, try to extract JSON from the response
+            try:
+                # Look for JSON content in the response
+                content = response.content
+                if "```json" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                    return json.loads(json_str)
+                elif content.strip().startswith("{") and content.strip().endswith("}"):
+                    return json.loads(content)
+                else:
+                    # Return a basic structure if we can't parse JSON
+                    return {
+                        "classification": "ERROR",
+                        "issues": [],
+                        "rationale": f"Failed to parse response: {content[:100]}...",
+                        "references": []
+                    }
+            except Exception as inner_e:
+                # Last resort fallback
+                return {
+                    "classification": "ERROR",
+                    "issues": [],
+                    "rationale": f"Failed to parse response: {str(e)}. Inner error: {str(inner_e)}",
+                    "references": []
+                }
 
 
 class PolicyEnhancerAgent(Agent):
@@ -161,15 +263,13 @@ When suggesting enhancements for a policy chunk against standards:
 4. Focus on clarity, completeness, and practicality in your suggestions.
 5. Maintain the original intent and context of the policy while enhancing it.
 6. Classify your overall assessment as "GOOD" (minor improvements), "MISSING" (needs additions), or "NON_COMPLIANT" (needs significant revision).
-7. Always provide justification for your enhancements, referencing both the original policy and standards.
 
-Your output should be in the following format:
+OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
 {
-  "chunk_content": "<The policy chunk you analyzed>",
   "classification": "<GOOD, MISSING, or NON_COMPLIANT>",
   "enhanced_content": "<The improved policy content with your enhancements>",
-  "enhancements": ["<List of specific enhancements made>"],
-  "justification": "<Your detailed reasoning for these enhancements>"
+  "changes": ["<List of specific enhancements made>"],
+  "rationale": "<Your detailed reasoning for these enhancements>"
 }"""
 
         # Initialize with tools for web search and vector DB retrieval
@@ -188,6 +288,10 @@ Your output should be in the following format:
         Returns:
             Enhanced policy with justification and explanation of changes
         """
+        # Configure the parser for structured output
+        parser = JsonOutputParser(pydantic_object=PolicyEnhancementOutput)
+        format_instructions = parser.get_format_instructions()
+        
         # Prepare prompt for the LLM
         prompt = f"""
         I need you to enhance this security policy chunk based on the gap analysis, compliance assessment, and standards.
@@ -205,6 +309,14 @@ Your output should be in the following format:
         {standards}
         
         Follow your instructions to enhance the policy, classify your assessment, and provide a detailed justification.
+        
+        YOU MUST RETURN ONLY A SINGLE JSON OBJECT with the following fields:
+        - classification: GOOD, MISSING, or NON_COMPLIANT
+        - enhanced_content: The improved policy content with your enhancements
+        - changes: Array of strings describing specific enhancements made
+        - rationale: String explaining your detailed reasoning for these enhancements
+        
+        {format_instructions}
         """
         
         # Create messages for the agent
@@ -216,5 +328,33 @@ Your output should be in the following format:
         # Get response from LLM
         response = self._invoke_with_retry(messages)
         
-        # Return the response content
-        return {"enhancement": response.content}
+        try:
+            # Parse the response to ensure it's in the correct format
+            parsed_response = parser.parse(response.content)
+            return parsed_response
+        except Exception as e:
+            # If parsing fails, try to extract JSON from the response
+            try:
+                # Look for JSON content in the response
+                content = response.content
+                if "```json" in content:
+                    json_str = content.split("```json")[1].split("```")[0].strip()
+                    return json.loads(json_str)
+                elif content.strip().startswith("{") and content.strip().endswith("}"):
+                    return json.loads(content)
+                else:
+                    # Return a basic structure if we can't parse JSON
+                    return {
+                        "classification": "ERROR",
+                        "enhanced_content": policy_chunk,
+                        "changes": [],
+                        "rationale": f"Failed to parse response: {content[:100]}..."
+                    }
+            except Exception as inner_e:
+                # Last resort fallback
+                return {
+                    "classification": "ERROR",
+                    "enhanced_content": policy_chunk,
+                    "changes": [],
+                    "rationale": f"Failed to parse response: {str(e)}. Inner error: {str(inner_e)}"
+                }

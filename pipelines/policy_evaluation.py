@@ -172,38 +172,41 @@ def identify_gaps(policy: str, standards: List[str]) -> List[Dict[str, Any]]:
         standards: List of standard documents
         
     Returns:
-        List of gaps identified with classification and justification
+        List of gap analysis results with a simplified structure:
+        - classification: Overall categorization of the chunk
+        - original_content: Original policy content that was analyzed
+        - gaps: List of specific gaps identified
+        - rationale: Explanation of the gap analysis
+        - references: Relevant references from standards
     """
     pipeline = PolicyEvaluationPipeline()
     evaluation_results = pipeline.evaluate_policy(policy, standards)
     
-    # Extract just the gap analysis from the results
+    # Extract gap analysis with a cleaner, more structured format
     gap_results = []
     for result in evaluation_results:
         try:
-            # Parse the gap analysis content
-            gap_analysis = result["gap_analysis"]["analysis"]
-            # If the content is a JSON string, parse it
-            if isinstance(gap_analysis, str):
-                if gap_analysis.strip().startswith('{'):
-                    try:
-                        gap_analysis = json.loads(gap_analysis)
-                    except json.JSONDecodeError:
-                        pass
+            # The gap_analysis is already a dictionary from the agent
+            gap_analysis = result["gap_analysis"]
             
-            gap_results.append({
-                "chunk_content": result["chunk_content"],
-                "classification": gap_analysis.get("classification", "UNKNOWN") if isinstance(gap_analysis, dict) else "UNKNOWN",
-                "gaps_identified": gap_analysis.get("gaps_identified", []) if isinstance(gap_analysis, dict) else [],
-                "justification": gap_analysis.get("justification", "") if isinstance(gap_analysis, dict) else gap_analysis,
-            })
+            # Create simplified, structured output
+            gap_result = {
+                "classification": gap_analysis.get("classification", "UNKNOWN"),
+                "original_content": result["chunk_content"],
+                "gaps": gap_analysis.get("gaps", []),
+                "rationale": gap_analysis.get("rationale", ""),
+                "references": gap_analysis.get("references", [])
+            }
+            
+            gap_results.append(gap_result)
         except (KeyError, AttributeError, TypeError) as e:
             logger.error(f"Error processing gap analysis result: {e}")
             gap_results.append({
-                "chunk_content": result["chunk_content"],
                 "classification": "ERROR",
-                "gaps_identified": [],
-                "justification": f"Error processing result: {str(e)}",
+                "original_content": result["chunk_content"],
+                "gaps": [],
+                "rationale": f"Error processing result: {str(e)}",
+                "references": []
             })
     
     return gap_results
@@ -217,38 +220,41 @@ def check_compliance(policy: str, standards: List[str]) -> List[Dict[str, Any]]:
         standards: List of standard documents
         
     Returns:
-        List of compliance assessments with classification and justification
+        List of compliance assessments with a simplified structure:
+        - classification: Overall compliance status
+        - original_content: Original policy content that was analyzed
+        - issues: List of identified compliance issues
+        - rationale: Explanation of the compliance assessment
+        - references: Relevant references from standards
     """
     pipeline = PolicyEvaluationPipeline()
     evaluation_results = pipeline.evaluate_policy(policy, standards)
     
-    # Extract just the compliance assessment from the results
+    # Extract compliance assessment with a cleaner, more structured format
     compliance_results = []
     for result in evaluation_results:
         try:
-            # Parse the compliance assessment content
-            compliance_assessment = result["compliance_assessment"]["assessment"]
-            # If the content is a JSON string, parse it
-            if isinstance(compliance_assessment, str):
-                if compliance_assessment.strip().startswith('{'):
-                    try:
-                        compliance_assessment = json.loads(compliance_assessment)
-                    except json.JSONDecodeError:
-                        pass
+            # The compliance_assessment is already a dictionary from the agent
+            compliance_assessment = result["compliance_assessment"]
             
-            compliance_results.append({
-                "chunk_content": result["chunk_content"],
-                "classification": compliance_assessment.get("classification", "UNKNOWN") if isinstance(compliance_assessment, dict) else "UNKNOWN",
-                "compliance_issues": compliance_assessment.get("compliance_issues", []) if isinstance(compliance_assessment, dict) else [],
-                "justification": compliance_assessment.get("justification", "") if isinstance(compliance_assessment, dict) else compliance_assessment,
-            })
+            # Create simplified, structured output
+            compliance_result = {
+                "classification": compliance_assessment.get("classification", "UNKNOWN"),
+                "original_content": result["chunk_content"],
+                "issues": compliance_assessment.get("issues", []),
+                "rationale": compliance_assessment.get("rationale", ""),
+                "references": compliance_assessment.get("references", [])
+            }
+            
+            compliance_results.append(compliance_result)
         except (KeyError, AttributeError, TypeError) as e:
             logger.error(f"Error processing compliance assessment result: {e}")
             compliance_results.append({
-                "chunk_content": result["chunk_content"],
                 "classification": "ERROR",
-                "compliance_issues": [],
-                "justification": f"Error processing result: {str(e)}",
+                "original_content": result["chunk_content"],
+                "issues": [],
+                "rationale": f"Error processing result: {str(e)}",
+                "references": []
             })
     
     return compliance_results
@@ -262,40 +268,41 @@ def enhance_policy(policy: str, standards: List[str]) -> List[Dict[str, Any]]:
         standards: List of standard documents
         
     Returns:
-        List of enhanced policy chunks with justification
+        List of enhancement results with a simplified structure:
+        - classification: Overall assessment category
+        - original_content: Original policy content that was analyzed
+        - enhanced_version: Improved version of the policy
+        - changes: List of specific changes/enhancements made
+        - rationale: Explanation of why these enhancements were made
     """
     pipeline = PolicyEvaluationPipeline()
     evaluation_results = pipeline.evaluate_policy(policy, standards)
     
-    # Extract just the enhancement from the results
+    # Extract enhancement with a cleaner, more structured format
     enhancement_results = []
     for result in evaluation_results:
         try:
-            # Parse the enhancement content
-            enhancement = result["enhancement"]["enhancement"]
-            # If the content is a JSON string, parse it
-            if isinstance(enhancement, str):
-                if enhancement.strip().startswith('{'):
-                    try:
-                        enhancement = json.loads(enhancement)
-                    except json.JSONDecodeError:
-                        pass
+            # The enhancement is already a dictionary from the agent
+            enhancement = result["enhancement"]
             
-            enhancement_results.append({
-                "chunk_content": result["chunk_content"],
-                "classification": enhancement.get("classification", "UNKNOWN") if isinstance(enhancement, dict) else "UNKNOWN",
-                "enhanced_content": enhancement.get("enhanced_content", "") if isinstance(enhancement, dict) else "",
-                "enhancements": enhancement.get("enhancements", []) if isinstance(enhancement, dict) else [],
-                "justification": enhancement.get("justification", "") if isinstance(enhancement, dict) else enhancement,
-            })
+            # Create simplified, structured output
+            enhancement_result = {
+                "classification": enhancement.get("classification", "UNKNOWN"),
+                "original_content": result["chunk_content"],
+                "enhanced_version": enhancement.get("enhanced_content", ""),
+                "changes": enhancement.get("changes", []),
+                "rationale": enhancement.get("rationale", "")
+            }
+            
+            enhancement_results.append(enhancement_result)
         except (KeyError, AttributeError, TypeError) as e:
             logger.error(f"Error processing enhancement result: {e}")
             enhancement_results.append({
-                "chunk_content": result["chunk_content"],
                 "classification": "ERROR",
-                "enhanced_content": result["chunk_content"],
-                "enhancements": [],
-                "justification": f"Error processing result: {str(e)}",
+                "original_content": result["chunk_content"],
+                "enhanced_version": result["chunk_content"],
+                "changes": [],
+                "rationale": f"Error processing result: {str(e)}"
             })
     
     return enhancement_results

@@ -38,6 +38,10 @@ class PolicyEnhancementResponse(BaseModel):
     """Response model for policy enhancement."""
     results: List[Dict[str, Any]] = Field(..., description="List of enhanced policy chunks with justification")
 
+class CombinedEvaluationResponse(BaseModel):
+    """Response model for combined policy evaluation."""
+    results: List[Dict[str, Any]] = Field(..., description="List of consolidated evaluation results for each policy chunk")
+
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 async def health_check():
@@ -87,24 +91,64 @@ async def policy_enhancement(request: PolicyEvaluationRequest):
         raise HTTPException(status_code=500, detail=f"Error in policy enhancement: {str(e)}")
 
 # Combined evaluation endpoint
-@app.post("/api/v1/evaluate-policy", tags=["Policy Evaluation"])
+@app.post("/api/v1/evaluate-policy", response_model=CombinedEvaluationResponse, tags=["Policy Evaluation"])
 async def evaluate_policy(request: PolicyEvaluationRequest):
     """
     Perform a comprehensive evaluation of a policy against standards.
     
     This endpoint combines gap identification, compliance checking, and policy enhancement
-    into a single comprehensive evaluation.
+    into a single comprehensive evaluation, with results merged by policy chunk.
     """
     try:
+        # Get all individual analysis results
         gap_results = identify_gaps(request.policy, request.standards)
         compliance_results = check_compliance(request.policy, request.standards)
         enhancement_results = enhance_policy(request.policy, request.standards)
         
-        return {
-            "gaps": gap_results,
-            "compliance": compliance_results,
-            "enhancements": enhancement_results
-        }
+        # Create a merged view by chunk
+        merged_results = []
+        
+        # Use original_content as the unique identifier for each chunk
+        for gap_item in gap_results:
+            chunk_content = gap_item["original_content"]
+            
+            # Find matching compliance and enhancement items
+            compliance_item = next(
+                (item for item in compliance_results if item["original_content"] == chunk_content),
+                None
+            )
+            
+            enhancement_item = next(
+                (item for item in enhancement_results if item["original_content"] == chunk_content),
+                None
+            )
+            
+            # Create consolidated result for this chunk
+            consolidated_result = {
+                "chunk_content": chunk_content,
+                "gap_analysis": {
+                    "classification": gap_item.get("classification", "UNKNOWN"),
+                    "gaps": gap_item.get("gaps", []),
+                    "rationale": gap_item.get("rationale", ""),
+                    "references": gap_item.get("references", [])
+                },
+                "compliance_assessment": {
+                    "classification": compliance_item.get("classification", "UNKNOWN") if compliance_item else "UNKNOWN",
+                    "issues": compliance_item.get("issues", []) if compliance_item else [],
+                    "rationale": compliance_item.get("rationale", "") if compliance_item else "",
+                    "references": compliance_item.get("references", []) if compliance_item else []
+                },
+                "enhancement": {
+                    "classification": enhancement_item.get("classification", "UNKNOWN") if enhancement_item else "UNKNOWN",
+                    "enhanced_version": enhancement_item.get("enhanced_version", "") if enhancement_item else "",
+                    "changes": enhancement_item.get("changes", []) if enhancement_item else [],
+                    "rationale": enhancement_item.get("rationale", "") if enhancement_item else ""
+                }
+            }
+            
+            merged_results.append(consolidated_result)
+            
+        return {"results": merged_results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in policy evaluation: {str(e)}")
 

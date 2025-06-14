@@ -7,7 +7,7 @@ import time
 from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 import sys
-from tools.index import get_all_tools
+from tools.index import get_base_tools
 from agents.prompts.base import get_web_enhanced_prompt
 
 logging.basicConfig(
@@ -32,7 +32,7 @@ class Agent:
     def __init__(self, system_prompt: str, tools: Optional[List[Dict[str, Any]]] = None):
         self.system_prompt = get_web_enhanced_prompt(system_prompt) if system_prompt else "" 
         self.memory = []
-        self.tools = get_all_tools + tools if tools else []
+        self.tools = get_base_tools() + tools if tools else get_base_tools()
         
 
         # Set up LLM with or without tools

@@ -10,7 +10,7 @@ This module contains the main pipeline for use case evaluation against standards
 import json
 import logging
 from typing import List, Dict, Any, Optional
-from agents.expert_agents import (
+from agents.evaluation_agents import (
     KPIAnalyzerAgent,
     DeploymentAnalyzerAgent,
     UseCaseJudgeAgent,

@@ -11,7 +11,7 @@ This module contains the main pipeline for policy evaluation against standards:
 import json
 import logging
 from typing import List, Dict, Any, Optional
-from agents.expert_agents import GapCheckerAgent, ComplianceCheckerAgent, PolicyEnhancerAgent
+from agents.evaluation_agents import GapCheckerAgent, ComplianceCheckerAgent, PolicyEnhancerAgent
 from tools.vector_db import fetch_relevant_policies, fetch_relevant_standards, rewrite_query
 
 # Setup logging

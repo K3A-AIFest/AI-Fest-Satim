@@ -8,6 +8,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 import sys
 from tools.index import get_all_tools
+from prompts.base import get_web_enhanced_prompt
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +30,7 @@ class Agent:
     """Base Agent class that all specialized agents will inherit from."""
 
     def __init__(self, system_prompt: str, tools: Optional[List[Dict[str, Any]]] = None):
-        self.system_prompt = system_prompt
+        self.system_prompt = get_web_enhanced_prompt(system_prompt) if system_prompt else "" 
         self.memory = []
         self.tools = get_all_tools + tools if tools else []
         

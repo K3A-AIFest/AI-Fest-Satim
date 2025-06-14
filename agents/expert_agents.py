@@ -204,6 +204,7 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         
         {format_instructions}
         """
+      
         
         # Create messages for the agent
         messages = [

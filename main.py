@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel, Field
 from pipelines.policy_evaluation import identify_gaps, check_compliance, enhance_policy, fast_policy_evaluation
+from pipelines.use_case_processor import analyze_use_case_kpis, analyze_deployment, judge_use_case, process_use_case
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -55,6 +56,55 @@ class FastAnalysisResponse(BaseModel):
     """Response model for fast policy analysis."""
     results: List[Dict[str, Any]] = Field(..., description="List of quick gap analysis results with classification")
     speed: str = Field("fast", description="Speed mode used for the analysis")
+
+# Use case processor models
+class UseCaseRequest(BaseModel):
+    """Request model for use case processor endpoints."""
+    use_case: str = Field(..., description="The security use case text to analyze")
+    standards: List[str] = Field(..., description="List of standard documents to evaluate against")
+    policies: Optional[List[str]] = Field(None, description="Optional list of policy documents to evaluate against")
+
+class KPIAnalysisResponse(BaseModel):
+    """Response model for KPI analysis."""
+    kpi_scores: Dict[str, float] = Field(..., description="Dictionary of KPI names and their scores")
+    analysis: Dict[str, str] = Field(..., description="Dictionary of KPI names and their analysis explanation")
+    overall_score: float = Field(..., description="Overall security KPI score between 0 and 100")
+    recommendations: List[str] = Field(..., description="List of recommendations to improve KPI scores")
+
+class DeploymentAnalysisResponse(BaseModel):
+    """Response model for deployment analysis."""
+    feasibility_score: float = Field(..., description="Feasibility score between 0-100")
+    pros: List[str] = Field(..., description="List of advantages for deploying the use case")
+    cons: List[str] = Field(..., description="List of disadvantages for deploying the use case")
+    timeline_estimate: str = Field(..., description="Estimated timeline for deployment")
+    resource_requirements: List[str] = Field(..., description="List of resources required for deployment")
+    risk_factors: List[Dict[str, Any]] = Field(..., description="List of risk factors with severity and mitigation")
+
+class UseCaseJudgmentResponse(BaseModel):
+    """Response model for use case judgment."""
+    effectiveness_score: float = Field(..., description="Effectiveness score between 0-100")
+    alignment_with_standards: List[Dict[str, Any]] = Field(..., description="Analysis of alignment with standards")
+    alignment_with_policies: List[Dict[str, Any]] = Field(..., description="Analysis of alignment with policies")
+    security_impact: str = Field(..., description="Overall security impact assessment")
+    gaps_identified: List[str] = Field(..., description="List of identified gaps in the use case")
+    improvement_suggestions: List[str] = Field(..., description="List of suggestions to improve the use case")
+
+class AggregatedAnalysisResponse(BaseModel):
+    """Response model for aggregated analysis."""
+    overall_assessment: str = Field(..., description="Overall assessment summary")
+    overall_score: float = Field(..., description="Overall score between 0-100")
+    key_findings: List[str] = Field(..., description="List of key findings from all analyses")
+    critical_considerations: List[str] = Field(..., description="List of critical considerations")
+    recommended_next_steps: List[str] = Field(..., description="Recommended next steps")
+    stakeholder_considerations: Dict[str, List[str]] = Field(..., description="Considerations for stakeholders")
+
+class CompleteUseCaseProcessingResponse(BaseModel):
+    """Response model for complete use case processing."""
+    use_case_content: str = Field(..., description="The original use case text that was analyzed")
+    kpi_analysis: KPIAnalysisResponse = Field(..., description="Results of KPI analysis")
+    deployment_analysis: DeploymentAnalysisResponse = Field(..., description="Results of deployment analysis")
+    use_case_judgment: UseCaseJudgmentResponse = Field(..., description="Results of use case judgment")
+    aggregated_analysis: AggregatedAnalysisResponse = Field(..., description="Results of aggregated analysis")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
@@ -197,6 +247,64 @@ async def fast_analyze_policy(request: FastPolicyEvaluationRequest):
         return {"results": results, "speed": "fast"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in fast policy analysis: {str(e)}")
+
+# Use Case Processor Endpoints
+
+@app.post("/api/v1/use-case/analyze-kpis", response_model=KPIAnalysisResponse, tags=["Use Case Processor"])
+async def analyze_use_case_kpis_endpoint(request: UseCaseRequest):
+    """
+    Analyze the security KPIs for a use case.
+    
+    This endpoint evaluates a security use case against industry standard security KPIs
+    and provides scores, analysis, and recommendations for improvement.
+    """
+    try:
+        results = analyze_use_case_kpis(request.use_case, request.standards, request.policies)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing use case KPIs: {str(e)}")
+
+@app.post("/api/v1/use-case/analyze-deployment", response_model=DeploymentAnalysisResponse, tags=["Use Case Processor"])
+async def analyze_deployment_endpoint(request: UseCaseRequest):
+    """
+    Analyze the deployment aspects of a security use case.
+    
+    This endpoint evaluates the feasibility, pros, cons, timeline, and resource requirements
+    for implementing a security use case.
+    """
+    try:
+        results = analyze_deployment(request.use_case, request.standards, request.policies)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing deployment aspects: {str(e)}")
+
+@app.post("/api/v1/use-case/judge", response_model=UseCaseJudgmentResponse, tags=["Use Case Processor"])
+async def judge_use_case_endpoint(request: UseCaseRequest):
+    """
+    Judge the quality and effectiveness of a security use case.
+    
+    This endpoint evaluates how well a security use case addresses security requirements
+    and aligns with standards and policies.
+    """
+    try:
+        results = judge_use_case(request.use_case, request.standards, request.policies)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error judging use case: {str(e)}")
+
+@app.post("/api/v1/use-case/process", response_model=CompleteUseCaseProcessingResponse, tags=["Use Case Processor"])
+async def process_use_case_endpoint(request: UseCaseRequest):
+    """
+    Process a security use case with comprehensive analysis.
+    
+    This endpoint combines KPI analysis, deployment analysis, judgment, and aggregated assessment
+    into a complete evaluation of a security use case.
+    """
+    try:
+        results = process_use_case(request.use_case, request.standards, request.policies)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing use case: {str(e)}")
 
 # Serve the application
 if __name__ == "__main__":

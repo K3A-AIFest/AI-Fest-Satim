@@ -1,0 +1,22 @@
+in the main api server we need a new feautre called use case processor that shall also uses the existing experts and maybe extra ones to handle a use case and comparing it againts a set of standards and against a set of polices if the policies are provided 
+
+
+
+the use case processors should have tools that implements and caluclated KPIS in the security feild domain (information security)
+
+
+so ur job is to see online some KPIS and then implement them as tools.
+
+
+
+the processor should also include deployment analysis of the use case , and higlghts the pros and cons of it  and suggest enhacemnts of the use case 
+
+
+as the already exsiting mutli expert agents , i want an agent that takes care of depolyment analysis , another one to calculate the kpis , another one to judge the use case and another one that is called the aggregator that should aggrengate the analysis of each expert and returns a final analysis
+
+ALL the models should use structued outputs , and please provide sustaimanle code ( not too long ugly files )
+
+
+ 
+
+One thing to mention is that we are not going to store use cases in a vector db as their emebdding should be done online In case we want to embed them 

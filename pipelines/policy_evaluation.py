@@ -9,10 +9,10 @@ This module contains the main pipeline for policy evaluation against standards:
 5. Combine results into a structured output
 """
 import json
+import logging
 from typing import List, Dict, Any, Optional
 from agents.expert_agents import GapCheckerAgent, ComplianceCheckerAgent, PolicyEnhancerAgent
 from tools.vector_db import fetch_relevant_policies, fetch_relevant_standards, rewrite_query
-import logging
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

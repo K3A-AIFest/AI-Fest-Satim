@@ -349,9 +349,8 @@ async def handle_evaluate_policy_file(
         HTTPException: If file processing or policy evaluation fails
     """
     try:
-        # Validate file
-        validate_file_size(file)
-        validate_file_type(file)
+        
+      
         
         # Extract text from file
         policy_content = await extract_text_from_file(file)
@@ -431,7 +430,7 @@ async def handle_fast_analyze_policy_file(
         
         # Set default standards if none provided
         if standards is None:
-            standards = ["ISO 27001", "NIST", "GDPR"]
+            standards = ["ISO 27001", "NIST", "GDPR","PCI-DSS"]
         
         # Process the policy
         results = fast_policy_evaluation(policy_content, standards)

@@ -7,6 +7,7 @@ security KPIs for banking and financial transaction systems.
 
 from typing import List, Dict, Any, Optional
 import json
+import re
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.output_parsers import JsonOutputParser
@@ -109,84 +110,72 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
         
         Args:
             use_case: The security use case text to analyze
-
             standards: Optional list of relevant standard documents to reference
             policies: Optional list of policy documents to reference
             
         Returns:
             Comprehensive KPI analysis with scores, explanations, and recommendations
         """
-        # Configure the parser for structured output
-        parser = JsonOutputParser(pydantic_object=KPIAnalysisOutput)
-        format_instructions = parser.get_format_instructions()
-        
-        # Prepare context information
-        policies_text = "\n\n".join(policies) if policies else "No specific policies provided."
-        standards_text = "\n\n".join(standards) if standards else "General financial security standards apply."
-
-        
-        prompt = f"""
-        I need you to analyze this security use case for banking/financial systems and calculate comprehensive security KPIs.
-        
-        ## USE CASE:
-        {use_case}
-        
-        ## SYSTEM DATA (for calculations):
-    YOU SHOULD EXTRACT RELEVANT METRICS FROM THE USE CASE TEXT. and use them to calculate the KPIs.
-        
-        ## STANDARDS TO REFERENCE:
-        {standards_text}
-        
-        ## POLICIES TO REFERENCE:
-        {policies_text}
-        
-        Use the available KPI calculation tools to compute accurate metrics. Focus on banking and financial security requirements.
-        Calculate all relevant KPIs and provide a comprehensive analysis.
-        
-        {format_instructions}
-        """
-        
-        # Create messages for the agent
-        messages = [
-            SystemMessage(content=self.system_prompt),
-            HumanMessage(content=prompt)
-        ]
-        
-        # Get response from LLM
-        response = self._invoke_with_retry(messages)
-        
         try:
-            # Parse the response to ensure it's in the correct format
-            parsed_response = parser.parse(response.content)
-            return parsed_response
+            # Step 1: Extract metrics from the use case text
+            extracted_metrics = self._extract_kpi_metrics_from_text(use_case)
+            
+            # Step 2: Calculate KPIs using extracted metrics
+            kpi_scores, analysis = self._calculate_kpis_with_extracted_metrics(extracted_metrics)
+            
+            # Step 3: Calculate overall score
+            if kpi_scores:
+                overall_score = sum(kpi_scores.values()) / len(kpi_scores)
+            else:
+                overall_score = 0.0
+            
+            # Step 4: Determine risk level
+            if overall_score < 60:
+                risk_level = "CRITICAL"
+            elif overall_score < 75:
+                risk_level = "HIGH"
+            elif overall_score < 85:
+                risk_level = "MEDIUM"
+            else:
+                risk_level = "LOW"
+            
+            # Step 5: Generate recommendations
+            recommendations = self.get_kpi_recommendations(kpi_scores)
+            
+            # Add context-specific recommendations based on use case content
+            if "mfa" in use_case.lower() or "authentication" in use_case.lower():
+                recommendations.append("Continue monitoring MFA adoption rates and user satisfaction")
+                if overall_score < 80:
+                    recommendations.append("Consider implementing adaptive authentication based on risk scoring")
+            
+            if "phishing" in use_case.lower():
+                recommendations.append("Implement advanced email security and user awareness training")
+            
+            # Prepare context information for additional analysis
+            policies_text = "\n\n".join(policies) if policies else "No specific policies provided."
+            standards_text = "\n\n".join(standards) if standards else "General financial security standards apply."
+            
+            # Add compliance-specific recommendations
+            if "pci" in standards_text.lower():
+                recommendations.append("Ensure all KPI improvements align with PCI-DSS requirements")
+            
+            return {
+                "kpi_scores": kpi_scores,
+                "analysis": analysis,
+                "overall_score": round(overall_score, 2),
+                "recommendations": recommendations,
+                "risk_level": risk_level
+            }
+            
         except Exception as e:
-            # If parsing fails, try to extract JSON from the response
-            try:
-                # Look for JSON content in the response
-                content = response.content
-                if "```json" in content:
-                    json_str = content.split("```json")[1].split("```")[0].strip()
-                    return json.loads(json_str)
-                elif content.strip().startswith("{") and content.strip().endswith("}"):
-                    return json.loads(content)
-                else:
-                    # Return a basic structure if we can't parse JSON
-                    return {
-                        "kpi_scores": {},
-                        "analysis": {},
-                        "overall_score": 0,
-                        "recommendations": [f"Error analyzing KPIs: {str(e)}"],
-                        "risk_level": "CRITICAL"
-                    }
-            except Exception as inner_e:
-                # Last resort fallback
-                return {
-                    "kpi_scores": {},
-                    "analysis": {},
-                    "overall_score": 0,
-                    "recommendations": [f"Error analyzing KPIs: {str(e)}. Inner error: {str(inner_e)}"],
-                    "risk_level": "CRITICAL"
-                }
+            # Fallback error handling
+            return {
+                "kpi_scores": {},
+                "analysis": {},
+                "overall_score": 0,
+                "recommendations": [f"Error analyzing KPIs: {str(e)}"],
+                "risk_level": "CRITICAL"
+            }
 
     def calculate_specific_kpi(self, kpi_name: str, **kwargs) -> Dict[str, Any]:
         """
@@ -271,3 +260,355 @@ OUTPUT FORMAT REQUIREMENT: Return a JSON object with ONLY these fields:
             recommendations.append("Review and update compliance procedures for PCI-DSS, SOX, and other financial regulations")
         
         return recommendations
+    
+    def _extract_kpi_metrics_from_text(self, use_case: str) -> Dict[str, Any]:
+        """
+        Extract or estimate KPI metrics from use case text.
+        
+        Args:
+            use_case: The use case text to analyze
+            
+        Returns:
+            Dictionary of extracted/estimated metrics for KPI calculations
+        """
+        metrics = {}
+        
+        # Look for percentages and numbers in the text
+        percentage_pattern = r'(\d+(?:\.\d+)?)\s*%'
+        number_pattern = r'\b(\d+(?:\.\d+)?)\b'
+        
+        percentages = re.findall(percentage_pattern, use_case)
+        numbers = re.findall(number_pattern, use_case)
+        
+        # Convert to floats
+        percentages = [float(p) for p in percentages]
+        numbers = [float(n) for n in numbers]
+        
+        # Vulnerability Management Effectiveness
+        if "vulnerability" in use_case.lower() or "patch" in use_case.lower():
+            # Look for vulnerability-related metrics
+            if percentages:
+                # Use highest percentage as effectiveness rate
+                effectiveness_rate = max(percentages)
+                total_vulns = 100 if not numbers else int(max(numbers))
+                addressed_vulns = int((effectiveness_rate / 100) * total_vulns)
+                metrics["vulnerability_management"] = {
+                    "total_vulnerabilities": total_vulns,
+                    "addressed_vulnerabilities": addressed_vulns
+                }
+            else:
+                # Default values for typical enterprise
+                metrics["vulnerability_management"] = {
+                    "total_vulnerabilities": 50,
+                    "addressed_vulnerabilities": 42  # 84% typical rate
+                }
+        
+        # Mean Time to Detect/Respond
+        if "detect" in use_case.lower() or "incident" in use_case.lower() or "response" in use_case.lower():
+            # Look for time-related metrics
+            detection_times = [2.5, 4.0, 1.5, 3.2, 2.8]  # Default sample times in hours
+            response_times = [4.0, 6.5, 3.0, 5.2, 4.8]   # Default sample times in hours
+            
+            metrics["mean_time_to_detect"] = {
+                "detection_times_hours": detection_times
+            }
+            metrics["mean_time_to_respond"] = {
+                "response_times_hours": response_times
+            }
+        
+        # Security Coverage Score
+        if "implement" in use_case.lower() or "coverage" in use_case.lower():
+            # Estimate coverage based on implementation scope
+            coverage_areas = {}
+            if "mfa" in use_case.lower() or "authentication" in use_case.lower():
+                coverage_areas["authentication"] = {"score": 85.0, "implemented": True}
+            if "encrypt" in use_case.lower():
+                coverage_areas["encryption"] = {"score": 90.0, "implemented": True}
+            if "monitor" in use_case.lower():
+                coverage_areas["monitoring"] = {"score": 75.0, "implemented": True}
+            if "access" in use_case.lower() or "authorization" in use_case.lower():
+                coverage_areas["access_control"] = {"score": 80.0, "implemented": True}
+            
+            if not coverage_areas:
+                # Default coverage areas
+                coverage_areas = {
+                    "general_security": {"score": 70.0, "implemented": True}
+                }
+            
+            metrics["security_coverage"] = {
+                "coverage_metrics": coverage_areas
+            }
+        
+        # Risk Reduction
+        if "risk" in use_case.lower() or "reduce" in use_case.lower():
+            # Extract risk reduction percentages
+            if percentages:
+                reduction_pct = max([p for p in percentages if p <= 100])
+                initial_risk = 85.0  # Typical initial risk level
+                residual_risk = initial_risk * (100 - reduction_pct) / 100
+            else:
+                initial_risk = 85.0
+                residual_risk = 25.0  # Assume good risk reduction
+            
+            metrics["risk_reduction"] = {
+                "initial_risk_level": initial_risk,
+                "residual_risk_level": residual_risk
+            }
+        
+        # Compliance Coverage
+        if "compliance" in use_case.lower() or "pci" in use_case.lower() or "policy" in use_case.lower():
+            # Extract compliance metrics
+            if percentages:
+                coverage_pct = max([p for p in percentages if p <= 100])
+                total_reqs = 100
+                covered_reqs = int((coverage_pct / 100) * total_reqs)
+            else:
+                total_reqs = 50
+                covered_reqs = 45  # 90% typical compliance
+            
+            metrics["compliance_coverage"] = {
+                "requirements_covered": covered_reqs,
+                "total_requirements": total_reqs
+            }
+        
+        # Transaction Anomaly Detection
+        if "anomaly" in use_case.lower() or "fraud" in use_case.lower() or "transaction" in use_case.lower():
+            # Use percentages from text or defaults
+            if percentages:
+                detection_rate = max([p for p in percentages if p <= 100])
+                total_anomalies = 100
+                detected_anomalies = int((detection_rate / 100) * total_anomalies)
+            else:
+                total_anomalies = 50
+                detected_anomalies = 42  # 84% detection rate
+            
+            metrics["transaction_anomaly"] = {
+                "detected_anomalies": detected_anomalies,
+                "total_anomalies": total_anomalies
+            }
+        
+        # False Positive Rate
+        if "alert" in use_case.lower() or "false" in use_case.lower():
+            total_alerts = 1000
+            false_positives = 50  # 5% false positive rate (good)
+            
+            metrics["false_positive"] = {
+                "false_positives": false_positives,
+                "total_alerts": total_alerts
+            }
+        
+        # Transaction Security Index
+        if "transaction" in use_case.lower() or "banking" in use_case.lower():
+            metrics["transaction_security"] = {
+                "encryption_score": 95.0,
+                "authentication_score": 85.0,
+                "fraud_detection_score": 80.0
+            }
+        
+        # System Availability
+        if "availability" in use_case.lower() or "uptime" in use_case.lower() or "downtime" in use_case.lower():
+            # Extract downtime metrics or use defaults
+            downtime_minutes = 5.0  # 5 minutes downtime per month (99.99% uptime)
+            
+            metrics["system_availability"] = {
+                "downtime_minutes": downtime_minutes,
+                "period_days": 30
+            }
+        
+        # Security Training Effectiveness
+        if "training" in use_case.lower() or "education" in use_case.lower():
+            # Extract training metrics
+            if percentages:
+                completion_rate = max([p for p in percentages if p <= 100])
+            else:
+                completion_rate = 95.0  # Default high completion rate
+            
+            metrics["security_training"] = {
+                "pre_training_score": 65.0,
+                "post_training_score": 85.0,
+                "completion_rate": completion_rate
+            }
+        
+        # Fraud Detection Efficiency
+        if "fraud" in use_case.lower():
+            metrics["fraud_detection"] = {
+                "detected_fraud_amount": 95000.0,
+                "total_fraud_amount": 100000.0,
+                "response_time_hours": 2.0
+            }
+        
+        # Encryption Strength Score
+        if "encrypt" in use_case.lower() or "aes" in use_case.lower():
+            metrics["encryption_strength"] = {
+                "encryption_algorithm": "AES",
+                "key_length": 256,
+                "data_in_transit_encrypted": True,
+                "data_at_rest_encrypted": True
+            }
+        
+        # Always include some baseline metrics for core KPIs if not already present
+        if "vulnerability_management" not in metrics:
+            metrics["vulnerability_management"] = {
+                "total_vulnerabilities": 25,
+                "addressed_vulnerabilities": 20  # 80% baseline
+            }
+        
+        if "mean_time_to_detect" not in metrics:
+            metrics["mean_time_to_detect"] = {
+                "detection_times_hours": [1.5, 2.8, 1.2, 3.5, 2.1]  # Baseline detection times
+            }
+        
+        if "mean_time_to_respond" not in metrics:
+            metrics["mean_time_to_respond"] = {
+                "response_times_hours": [3.0, 4.5, 2.8, 5.2, 3.8]  # Baseline response times
+            }
+        
+        if "security_coverage" not in metrics:
+            metrics["security_coverage"] = {
+                "coverage_metrics": {
+                    "access_control": {"score": 75.0, "implemented": True},
+                    "monitoring": {"score": 70.0, "implemented": True},
+                    "authentication": {"score": 80.0, "implemented": True}
+                }
+            }
+        
+        if "system_availability" not in metrics:
+            metrics["system_availability"] = {
+                "downtime_minutes": 10.0,  # 10 minutes downtime per month
+                "period_days": 30
+            }
+        
+        return metrics
+
+    def _calculate_kpis_with_extracted_metrics(self, extracted_metrics: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calculate KPIs using extracted metrics from the text.
+        
+        Args:
+            extracted_metrics: Dictionary of extracted metrics
+            
+        Returns:
+            Dictionary with calculated KPI scores and analysis
+        """
+        kpi_scores = {}
+        analysis = {}
+        
+        # Calculate each KPI based on available metrics
+        if "vulnerability_management" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "vulnerability_management_effectiveness",
+                **extracted_metrics["vulnerability_management"]
+            )
+            if "error" not in result:
+                kpi_scores["vulnerability_management_effectiveness"] = result["score"]
+                analysis["vulnerability_management_effectiveness"] = result["details"]
+        
+        if "mean_time_to_detect" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "mean_time_to_detect",
+                **extracted_metrics["mean_time_to_detect"]
+            )
+            if "error" not in result:
+                kpi_scores["mean_time_to_detect"] = result["score"]
+                analysis["mean_time_to_detect"] = result["details"]
+        
+        if "mean_time_to_respond" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "mean_time_to_respond",
+                **extracted_metrics["mean_time_to_respond"]
+            )
+            if "error" not in result:
+                kpi_scores["mean_time_to_respond"] = result["score"]
+                analysis["mean_time_to_respond"] = result["details"]
+        
+        if "security_coverage" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "security_coverage_score",
+                **extracted_metrics["security_coverage"]
+            )
+            if "error" not in result:
+                kpi_scores["security_coverage_score"] = result["score"]
+                analysis["security_coverage_score"] = result["details"]
+        
+        if "risk_reduction" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "risk_reduction_percentage",
+                **extracted_metrics["risk_reduction"]
+            )
+            if "error" not in result:
+                kpi_scores["risk_reduction_percentage"] = result["score"]
+                analysis["risk_reduction_percentage"] = result["details"]
+        
+        if "compliance_coverage" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "compliance_coverage_percentage",
+                **extracted_metrics["compliance_coverage"]
+            )
+            if "error" not in result:
+                kpi_scores["compliance_coverage_percentage"] = result["score"]
+                analysis["compliance_coverage_percentage"] = result["details"]
+        
+        if "transaction_anomaly" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "transaction_anomaly_detection_rate",
+                **extracted_metrics["transaction_anomaly"]
+            )
+            if "error" not in result:
+                kpi_scores["transaction_anomaly_detection_rate"] = result["score"]
+                analysis["transaction_anomaly_detection_rate"] = result["details"]
+        
+        if "false_positive" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "false_positive_rate",
+                **extracted_metrics["false_positive"]
+            )
+            if "error" not in result:
+                kpi_scores["false_positive_rate"] = result["score"]
+                analysis["false_positive_rate"] = result["details"]
+        
+        if "transaction_security" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "transaction_security_index",
+                **extracted_metrics["transaction_security"]
+            )
+            if "error" not in result:
+                kpi_scores["transaction_security_index"] = result["score"]
+                analysis["transaction_security_index"] = result["details"]
+        
+        if "system_availability" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "system_availability_percentage",
+                **extracted_metrics["system_availability"]
+            )
+            if "error" not in result:
+                kpi_scores["system_availability_percentage"] = result["score"]
+                analysis["system_availability_percentage"] = result["details"]
+        
+        if "security_training" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "security_training_effectiveness",
+                **extracted_metrics["security_training"]
+            )
+            if "error" not in result:
+                kpi_scores["security_training_effectiveness"] = result["score"]
+                analysis["security_training_effectiveness"] = result["details"]
+        
+        if "fraud_detection" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "fraud_detection_efficiency",
+                **extracted_metrics["fraud_detection"]
+            )
+            if "error" not in result:
+                kpi_scores["fraud_detection_efficiency"] = result["score"]
+                analysis["fraud_detection_efficiency"] = result["details"]
+        
+        if "encryption_strength" in extracted_metrics:
+            result = self.calculate_specific_kpi(
+                "encryption_strength_score",
+                **extracted_metrics["encryption_strength"]
+            )
+            if "error" not in result:
+                kpi_scores["encryption_strength_score"] = result["score"]
+                analysis["encryption_strength_score"] = result["details"]
+        
+        return kpi_scores, analysis

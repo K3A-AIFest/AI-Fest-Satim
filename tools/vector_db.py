@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from retreiver import polices_retreiver, standards_retreiver
 from llama_index.core.schema import TextNode
 
-def fetch_relevant_policies(query: str, top_k: int = 10) -> List[Dict[str, Any]]:
+def fetch_relevant_policies(query: str) -> List[Dict[str, Any]]:
     """
     Fetch relevant policy documents from the vector database.
     
@@ -20,7 +20,7 @@ def fetch_relevant_policies(query: str, top_k: int = 10) -> List[Dict[str, Any]]
     top_k = min(max(1, top_k), 20)
     
     # Retrieve relevant nodes
-    retrieved_nodes = polices_retreiver.retrieve(query, similarity_top_k=top_k)
+    retrieved_nodes = polices_retreiver.retrieve(query)
     
     # Process nodes into a standardized format
     results = []
@@ -48,7 +48,7 @@ def fetch_relevant_standards(query: str, top_k: int = 10) -> List[Dict[str, Any]
     top_k = min(max(1, top_k), 20)
     
     # Retrieve relevant nodes
-    retrieved_nodes = standards_retreiver.retrieve(query, similarity_top_k=top_k)
+    retrieved_nodes = standards_retreiver.retrieve(query)
     
     # Process nodes into a standardized format
     results = []

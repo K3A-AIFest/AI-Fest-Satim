@@ -159,6 +159,78 @@ class PolicyEvaluationPipeline:
         
         logger.info(f"Policy evaluation complete: {len(results)} chunks processed")
         return results
+    
+    def evaluate_policy_fast(self, policy_content: str, standards_content: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Perform a fast evaluation of a policy document against standards.
+        
+        This method is optimized for speed by:
+        1. Using larger chunks to reduce the number of API calls
+        2. Sampling representative chunks rather than processing the entire document
+        3. Focusing only on critical gap identification
+        
+        Args:
+            policy_content: Full policy document text
+            standards_content: Optional list of specific standards to evaluate against
+                             (if None, relevant standards will be retrieved automatically)
+            
+        Returns:
+            List of fast evaluation results for representative policy chunks
+        """
+        logger.info("Starting fast policy evaluation")
+        
+        # Split policy into larger chunks for faster processing
+        # Using 2x the size of normal chunks to reduce processing time
+        policy_chunks = self.chunk_policy(policy_content, chunk_size=2000)
+        
+        # If there are many chunks, sample a representative subset
+        # Take first, middle, and last chunks plus random samples in between
+        if len(policy_chunks) > 5:
+            sampled_indices = set()
+            # Always include first and last chunks
+            sampled_indices.add(0)
+            sampled_indices.add(len(policy_chunks) - 1)
+            
+            # Add middle chunk
+            middle_idx = len(policy_chunks) // 2
+            sampled_indices.add(middle_idx)
+            
+            # Add up to 2 more chunks randomly if available
+            import random
+            remaining_indices = set(range(1, len(policy_chunks) - 1)) - sampled_indices
+            additional_samples = min(2, len(remaining_indices))
+            if additional_samples > 0 and remaining_indices:
+                sampled_indices.update(random.sample(remaining_indices, additional_samples))
+            
+            # Get the sampled chunks in order
+            sampled_chunks = [policy_chunks[i] for i in sorted(sampled_indices)]
+            logger.info(f"Sampled {len(sampled_chunks)} chunks out of {len(policy_chunks)} for fast analysis")
+            policy_chunks = sampled_chunks
+        
+        results = []
+        
+        # Process each chunk
+        for i, chunk in enumerate(policy_chunks):
+            logger.info(f"Fast processing chunk {i+1}/{len(policy_chunks)}")
+            
+            # Get relevant standards if not provided
+            chunk_standards = standards_content if standards_content else self.get_relevant_standards(chunk)
+            
+            # Only perform gap analysis for fast mode
+            logger.info("Performing quick gap analysis")
+            gap_analysis = self.gap_checker.analyze_gaps(chunk, chunk_standards)
+            
+            # Create simplified result with just gap analysis
+            result = {
+                "chunk_content": chunk,
+                "gap_analysis": gap_analysis,
+                "is_fast_analysis": True
+            }
+            
+            results.append(result)
+        
+        logger.info(f"Fast policy evaluation complete: {len(results)} chunks processed")
+        return results
 
 
 # Functions for the three main tasks
@@ -306,3 +378,66 @@ def enhance_policy(policy: str, standards: List[str]) -> List[Dict[str, Any]]:
             })
     
     return enhancement_results
+
+def fast_policy_evaluation(policy: str, standards: List[str]) -> List[Dict[str, Any]]:
+    """
+    Perform a fast evaluation of a policy against standards.
+    
+    This function provides a simplified and faster analysis using several optimization techniques:
+    1. Uses larger chunks (2000 chars vs 1000 chars) to reduce the number of processing units
+    2. Samples representative chunks rather than processing the entire document
+    3. Focuses only on critical gaps rather than full compliance assessment
+    4. Skips the enhancement generation step
+    
+    This mode is ideal for:
+    - Initial quick assessment of a policy
+    - Processing very large policy documents
+    - When time constraints require rapid feedback
+    - Preliminary screening before a deep analysis
+    
+    Args:
+        policy: Policy document text
+        standards: List of standard documents
+        
+    Returns:
+        List of gap analysis results with a simplified structure:
+        - classification: Overall categorization of the chunk
+        - original_content: Original policy content that was analyzed
+        - gaps: List of specific gaps identified
+        - rationale: Explanation of the gap analysis
+        - references: Relevant references from standards
+        - speed: Indication this was a fast analysis
+    """
+    pipeline = PolicyEvaluationPipeline()
+    evaluation_results = pipeline.evaluate_policy_fast(policy, standards)
+    
+    # Extract gap analysis with a cleaner, more structured format
+    gap_results = []
+    for result in evaluation_results:
+        try:
+            # The gap_analysis is already a dictionary from the agent
+            gap_analysis = result["gap_analysis"]
+            
+            # Create simplified, structured output
+            gap_result = {
+                "classification": gap_analysis.get("classification", "UNKNOWN"),
+                "original_content": result["chunk_content"],
+                "gaps": gap_analysis.get("gaps", []),
+                "rationale": gap_analysis.get("rationale", ""),
+                "references": gap_analysis.get("references", []),
+                "speed": "fast"
+            }
+            
+            gap_results.append(gap_result)
+        except (KeyError, AttributeError, TypeError) as e:
+            logger.error(f"Error processing fast analysis result: {e}")
+            gap_results.append({
+                "classification": "ERROR",
+                "original_content": result["chunk_content"],
+                "gaps": [],
+                "rationale": f"Error processing result: {str(e)}",
+                "references": [],
+                "speed": "fast"
+            })
+    
+    return gap_results

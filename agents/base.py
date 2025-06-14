@@ -8,7 +8,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 import logging
 import sys
 from tools.index import get_all_tools
-from prompts.base import get_web_enhanced_prompt
+from agents.prompts.base import get_web_enhanced_prompt
 
 logging.basicConfig(
     level=logging.INFO,

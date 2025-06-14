@@ -11,7 +11,7 @@ import json
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel, Field
-from pipelines.policy_evaluation import identify_gaps, check_compliance, enhance_policy
+from pipelines.policy_evaluation import identify_gaps, check_compliance, enhance_policy, fast_policy_evaluation
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -25,6 +25,14 @@ class PolicyEvaluationRequest(BaseModel):
     """Request model for policy evaluation endpoints."""
     policy: str = Field(..., description="The policy document text to evaluate")
     standards: List[str] = Field(..., description="List of standard documents to evaluate against")
+    
+class FastPolicyEvaluationRequest(PolicyEvaluationRequest):
+    """Request model for fast policy evaluation endpoint."""
+    pass
+
+class PolicyEvaluationRequestWithSpeed(PolicyEvaluationRequest):
+    """Request model for policy evaluation with speed option."""
+    speed: Optional[str] = Field("deep", description="Analysis speed: 'deep' (thorough analysis) or 'fast' (quick analysis)")
 
 class GapAnalysisResponse(BaseModel):
     """Response model for gap identification."""
@@ -41,6 +49,12 @@ class PolicyEnhancementResponse(BaseModel):
 class CombinedEvaluationResponse(BaseModel):
     """Response model for combined policy evaluation."""
     results: List[Dict[str, Any]] = Field(..., description="List of consolidated evaluation results for each policy chunk")
+    speed: str = Field("deep", description="Speed mode used for the analysis")
+
+class FastAnalysisResponse(BaseModel):
+    """Response model for fast policy analysis."""
+    results: List[Dict[str, Any]] = Field(..., description="List of quick gap analysis results with classification")
+    speed: str = Field("fast", description="Speed mode used for the analysis")
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
@@ -92,18 +106,31 @@ async def policy_enhancement(request: PolicyEvaluationRequest):
 
 # Combined evaluation endpoint
 @app.post("/api/v1/evaluate-policy", response_model=CombinedEvaluationResponse, tags=["Policy Evaluation"])
-async def evaluate_policy(request: PolicyEvaluationRequest):
+async def evaluate_policy(request: PolicyEvaluationRequestWithSpeed):
     """
     Perform a comprehensive evaluation of a policy against standards.
     
     This endpoint combines gap identification, compliance checking, and policy enhancement
     into a single comprehensive evaluation, with results merged by policy chunk.
+    
+    You can specify a 'speed' parameter with values:
+    - 'deep' (default): Thorough analysis with gap identification, compliance checking, and policy enhancement
+    - 'fast': Quick analysis focusing only on critical gaps, with larger chunks and sampling for faster results
     """
     try:
-        # Get all individual analysis results
-        gap_results = identify_gaps(request.policy, request.standards)
-        compliance_results = check_compliance(request.policy, request.standards)
-        enhancement_results = enhance_policy(request.policy, request.standards)
+        # Check if fast mode is requested
+        speed = getattr(request, 'speed', 'deep')
+        
+        if speed == 'fast':
+            # For fast mode, only perform gap analysis
+            gap_results = fast_policy_evaluation(request.policy, request.standards)
+            compliance_results = []
+            enhancement_results = []
+        else:
+            # Regular deep analysis
+            gap_results = identify_gaps(request.policy, request.standards)
+            compliance_results = check_compliance(request.policy, request.standards)
+            enhancement_results = enhance_policy(request.policy, request.standards)
         
         # Create a merged view by chunk
         merged_results = []
@@ -148,9 +175,28 @@ async def evaluate_policy(request: PolicyEvaluationRequest):
             
             merged_results.append(consolidated_result)
             
-        return {"results": merged_results}
+        return {"results": merged_results, "speed": request.speed}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in policy evaluation: {str(e)}")
+
+# Fast policy analysis endpoint
+@app.post("/api/v1/fast-analyze", response_model=FastAnalysisResponse, tags=["Policy Evaluation"])
+async def fast_analyze_policy(request: FastPolicyEvaluationRequest):
+    """
+    Perform a quick analysis of a policy against standards.
+    
+    This endpoint provides a faster analysis by:
+    1. Processing only representative chunks of the policy
+    2. Focusing only on critical gaps rather than full compliance
+    3. Using larger chunks to reduce processing time
+    
+    It's ideal for initial assessment or when time is limited.
+    """
+    try:
+        results = fast_policy_evaluation(request.policy, request.standards)
+        return {"results": results, "speed": "fast"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in fast policy analysis: {str(e)}")
 
 # Serve the application
 if __name__ == "__main__":

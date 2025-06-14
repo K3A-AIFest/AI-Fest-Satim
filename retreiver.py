@@ -27,3 +27,7 @@ standards_retreiver = VectorIndexRetriever(
     index=standards_index,
     similarity_top_k=20,  # Number of most relevant chunks to retrieve
 )
+
+# Use retriever to get additional relevant information
+#    retrieved_nodes = retriever.retrieve(document)
+#    additional_context = "\n\n".join([node.text for node in retrieved_nodes])

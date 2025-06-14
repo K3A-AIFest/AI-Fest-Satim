@@ -1,0 +1,124 @@
+<@638828933936316434> 
+ WE HAve 2 index vector dbs polices and standarts , polices should be evaluated against standards , in 3 asepcts 
+ 1. indentifying the gaps and missing things in the policies comprared to the standards . 
+ 2. checking the compliance of the policies compared to the standards .
+ 3. enhacing the current current policy based on 2 and 3 
+
+
+1. i want this to be a mixture of experts that are all can access the web and should evaluate the polciy from diffrent aspects ,  in a disucssion based with loop  between the expertds 
+2. indentifying the gaps should be a loop based.
+3. create the modues gap_checker , compliance_checker , and enhancor 
+
+they all take 2 args , one string  of polict and a list of string of standartds to be evaluated against based on 1, 2, and 3  
+
+Now use the following code base as a start u have a base agent with web search tool , add more tools that usees the 2 index vector databses (polices and standartds with wuery rewrites and stuff like that to fetch relvant docs )
+
+
+
+How to serve the solution , 3 endpoints that serves feeatures 1 , 2 , 3 and taks args as specfied in the args of each pipline , but remeer to make the output systematic and with high recall and accruacy
+
+
+here is an example content of a standart 
+
+
+ and Testing Procedures, v4.0.1 June 2024 
+©2006 - 2024 PCI Security Standards Council, LLC. All Rights Reserved. Page 1 
+ 
+1 Introduction and PCI Data Security Standard Overview  
+The Payment Card Industry Data Security Standard (PCI DSS) was developed to encourage and enhance payment account data security and 
+facilitate the broad adoption of consistent data security measures globally. PCI DSS provides a baseline of technical and operational 
+requirements designed to protect account data. While specifically designed to focus on environments with payment account data, PCI DSS 
+can also be used to protect against threats and secure other elements in the payment ecosystem.  Table 1 shows the 12 principal PCI DSS requirements. 
+Table 1. Principal PCI DSS Requirements PCI Data Security Standard – High Level Overview Build and Maintain a Secure Network and Systems 1. Install and Maintain Network Security Controls. 
+2. Apply Secure Configurations to All System Components. 
+Protect Account Data 3. Protect Stored Account Data. 
+4. Protect Cardholder Data with Strong Cryptography During Transmission Over Open, 
+Public Networks. 
+Maintain a Vulnerability Management Program 5. Protect All Systems and Networks from Malicious Software. 
+6. Develop and Maintain Secure Systems and Software. 
+Implement Strong Access Control Measures 7. Restrict Access to System Components and Cardholder Data by Business Need to Know. 
+8. Identify Users and Authenticate Access to System Components. 
+9. Restrict Physical Access to Cardholder Data. 
+Regularly Monitor and Test Networks 10.  Log and Monitor All Access to System Components and Cardholder Data. 
+11.  Test Security of Systems and Networks Regularly. 
+Maintain an Information Security Policy 12.  Support Information Security with Organizational Policies and Programs. This document, the Payment Card Industry Data Security Standard Requirements and Testing Procedures, consists of the 12 PCI DSS 
+principal requirements, detailed security requirements, corresponding testing procedures, and other information pertinent to each requirement. 
+The following sections provide detailed guidelines and best practices to assist entities to prepare for, conduct, and report the results of a PCI 
+DSS assessment. The PCI DSS requirements and testing procedures begin on page 43. 
+
+
+
+
+
+here is an example of a policy content 
+Access-Control-Policy.docx
+Your file will expire in 24 hours unless you sign up.
+Add a CTAUpgrade
+
+Button visibility
+Button type
+Button text
+Button link
+Button color
+#1891ED
+
+Text color
+#FFFFFF
+
+Button style
+Show my photo 
+ 
+Choose ThumbnailUpgrade
+
+Static
+Animation
+ 
+
+
+Trim your video using the handles and Split button. Merge with other videos by clicking the Add Clip button. 
+
+View help article
+ Edit Captions
+
+ Engagement Insights
+
+Video Views
+0
+Video Downloads
+0
+Call-to-Action Clicks 
+0
+Average Completion Rate 
+0%
+viewers
+
+
+Someone from Pakistan desktop
+Apr 14, 2021
+
+Someone from Pakistan desktop
+Apr 14, 2021
+
+Someone from Pakistan desktop
+Apr 14, 2021
+ Transcription
+
+Enable transcriptions to enhance audience accessibility
+
+Engagement Insights
+
+Analytics
+
+Find out who viewed and downloaded
+your file, when, and from where.
+0 Comments
+
+Leave a comment
+Zoom inZoom outPrint DocumentFullscreenPage
+1
+/ 8
+Policy #:Title:Effective Date:x.xxxAccess Control PolicyMM/DD/YYPURPOSE_______________________________________________________________To ensure that access controls are implemented and in compliance with IT security policies, standards, and procedures.  REFERENCE_______________________________________________________________National Institute of Standards and Technology (NIST) Special Publications (SP): NIST SP 800-53a –Access Control (AC), NIST SP 800-12, NIST 800-46, NIST SP 800-48, NIST SP 800-77, NIST SP 800-94, NIST SP 800-97, NIST SP 800-100, NIST SP 800-113, NIST SP 800-114, NIST SP 800-121, NIST SP 800-124, NIST SP 800-164;NIST Federal Information Processing Standards(FIPS) 199POLICY_______________________________________________________________This policy is applicable to all departments and users of cisecurity resources and assets.1.ACCOUNT MANAGEMENTIT Department shall:a.Identify and select the following types of information system accounts to support organizational missions and business functions: individual, shared, group, system, guest/anonymous, emergency, developer/manufacturer/vendor, temporary, and service.b.Assign account managers for information system accounts.c.Establish conditions for group and role membership.d.Specify authorized users of the information system, group and role membership, and access authorizations (i.e., privileges) and other attributes (as required) for each account.e.Require approvalsby system owners for requests to create information system accounts.f.Create, enable, modify, disable, and remove information system accounts in accordance with approved procedures.g.Monitor the use of information system accounts.
+h.Notify account managerswhen accounts are no longer required, when users are terminated or transferred, and when individual information system usage or need-to-know changes.i.Authorize access to the information system based on a valid access authorization or intended system usage.j.Review accounts for compliance with account management requirements At least once every six months.k.Establish a process for reissuing shared/group account credentials (if deployed) when individuals are removed from the group.l.Employ automated mechanisms to support the management of information system accounts.m.Ensure that the information system automatically disables temporary and emergency accounts after usage.n.Ensure that the information system automatically disables inactive accounts after90 dayso.Ensure that the information system automatically audits account creation, modification, enabling, disabling, and removal actions, and notifies appropriate IT personnel.2.ACCESS ENFORCEMENTIT Department shall:a.Ensure that the information system enforces approved authorizations for logical access to information and system resources in accordance with applicable access control policies.3.INFORMATION FLOW ENFORCEMENTIT Department shall:a.Ensure that the information system enforces approved authorizations for controlling the flow of information within the system and between interconnected systems based on applicable policy.  4.SEPARATION OF DUTIESIT Departmentshall:a.Separate duties of individuals as necessary, to prevent malevolent activity without collusion.b.Document the separation of duties of individuals. 
+c.Define information system access authorizations to support separation of duties.5.LEAST PRIVILEGEIT Departmentshall:a.Employ theprinciple of least privilege, allowing only authorized accesses for users (or processes acting on behalf of users) which are necessary to accomplish assigned tasks in accordance with organizational missions and business functions.b.Authorize explicitly access to hardware and software controlling access to systems and filtering rules for routers/firewalls, cryptographic key management information, configuration parameters for security services, and access control lists.c.Require that users of information system accounts, or roles, with access tosensitiveassets, use non-privileged accounts or roles, when accessing non-security functions.d.Restrict privileged accounts on the information system , based on: i.Job classification and function.ii.Least privileges necessary to perform job responsibilities.e.Ensure that the information system audits the execution of privileged functions.f.Ensure that the information system prevents non-privileged users from executing privileged functions to include disabling, circumventing, or altering implemented security safeguards/countermeasures.6.UNSUCCESSFUL LOGON ATTEMPTSIT Departmentshall ensure that the information system:a.Enforces a limit of consecutive invalid logon attempts by a user during a five attempts.b.Locks the account/node automatically for 30 minutesor until released by an administrator when the maximum number of unsuccessful attempts is exceeded.7.SYSTEM USE NOTIFICATIONIT Departmentshall ensure that the information system:a.Displays tousers an approved system use notification message or banner before granting access to the system that provides privacy and security 
+notices consistent with applicable state and federal laws, directives, policies, regulations, standards, and guidance and states informing that:i.Users are accessing a cisecurityinformation system.ii.Information system usage may be monitored, recorded, and subject to audit.iii.Unauthorized use of the information system is prohibited and subject to criminal and civil penalties.iv.Use of the information system indicates consent to monitoring and recording.v.There are not rights to privacy.b.Retains the notification message or banner on the screen until users acknowledge the usage conditions and take explicit actions to log on to or further access the information system.c.For publicly accessible systems, the ITDepartmentshall ensure that the information system:i.Displays   system   use   information, such   as   a   warning   banner   or acceptable use notice, upon each user login session to systems within the cardholder data environment, before granting further access.ii.Displays references, if any, to monitoring, recording, or auditing that are consistent with privacy accommodations for such systems that generally prohibit those activities.iii.Includes a description of the authorized uses of the system.8.SESSION LOCKIT Departmentshall ensure that the information system:a.Prevent further access to the system by initiating a session lock after 15 minutes of inactivity or upon receiving a requestfrom a user.b.Retain the session lock until the user reestablishes access using established identification and authentication procedures.c.Conceal, via the session lock, information previously visible on the display with a publicly viewable image.9.SESSION TERMINATION
+IT Departmentshall:a.Ensure that the information system automatically terminates a user session after 30 minutes.10.PERMITTED ACTIONS WITHOUT IDENTIFICATION OR AUTHENTICATIONIT Departmentshall:a.Identify user actions that can be performed on the information system without identification or authentication consistent with organizational missions and business functions.b.Document and provide supporting rationale in the security plan for the information system, user actions not requiring identification or authentication.11.REMOTE ACCESSIT Departmentshall:a.Establish and document usage restrictions, configuration/connection requirements, and implementation guidance for each type of remote access allowed.b.Authorize remote access to the information system prior to allowing such connections.c.Ensure that the information system monitors and controls remote access methods.d.Ensure that the information system implements cryptographic mechanisms to protect the confidentiality and integrity of remote access sessions.e.Ensure that the information system routes all remote accesses through a single, centrallymanaged network access control points to reduce the risk for external attacks.f.Authorize the execution of privileged commands and access to security-relevant informationvia remote access only for justified and approved use cases, such as emergency system maintenance or urgent security investigations, with strong authentication and activity monitoring in place.g.Document the rationale for such access in the security plan for the information system.12.WIRELESS ACCESSIT Departmentshall:
